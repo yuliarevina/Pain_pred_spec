@@ -1,14 +1,14 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from psychopy import core, clock, data, visual, event, gui, monitors #parallel
+from psychopy import core, clock, data, visual, event, gui, monitors, logging #parallel
 import csv, random, time, numpy, sys, platform, os
 from pyglet.window import key
 import matplotlib.pyplot as plt # for plotting the results
-import parallel
+#import parallel
 from scipy.io import savemat
 
+logging.console.setLevel(logging.WARNING)
 
 
 #########
@@ -46,9 +46,9 @@ eyetrack_mode = False
 brainAmp = False
 
 #thermode
-thermode = True
-#whichComputer = "Home" #python3
-whichComputer = "LaserLab" #python2
+thermode = False
+whichComputer = "Home" #python3
+#whichComputer = "LaserLab" #python2
 
 if whichComputer == "LaserLab":
     sys.path.insert(1, '/NOBACKUP2/Controlling_QST/')
@@ -59,7 +59,7 @@ if whichComputer == "LaserLab":
     import ButtonBoxFunctions as bb
     
 else:
-    directory="D:\\Yulia\\Psychopy Learning\\"
+    directory="D:\\GitHub\\Pain_pred_spec\\"
 
 if brainAmp:
     # # Port for BrainAmp Trigger
@@ -74,6 +74,12 @@ if brainAmp:
         while timer.getTime() <= 0.05:
             p_out.setData(int("00000001", 2))  # sets pin 2 high
         p_out.setData(0)
+        
+if parallel_port_mode:
+    # initialize button boxes on port 0
+    timerRating=core.Clock() 
+    bbox = bb.ButtonBox(port = 0, clock = timerRating)
+            
     
 # *******************************************************
 #                   Timing
@@ -85,15 +91,15 @@ timer = core.Clock()
 # how long should the TTL pulse be?
 thermode_trigger_dur = 0.01
 # How long is the stimulation programmed?
-stim_time = 1.5
+#stim_time = 1.5
 
 ## SETUP thermode
 # settings
 baselineTemp = 31.0 # baseline/neutral temperature (for all 5 zones equally)
 durations = [1]*5 # stimulation durations in s for the 5 zones
-ramp_speed = [100]*5 # ramp up speed in °C/s for the 5 zones
-return_speed = [100]*5 # ramp down speed in °C/s for the 5 zones
-mytemperatures = [47]*5 # target temperatures in °C for the 5 zones
+ramp_speed = [100]*5 # ramp up speed in C/s for the 5 zones
+return_speed = [100]*5 # ramp down speed in C/s for the 5 zones
+mytemperatures = [47]*5 # target temperatures in C for the 5 zones
 
 
 ## stimulus durations and parameters
@@ -130,9 +136,10 @@ myDlg.addField('Alter:', 21)
 myDlg.addField('Geschlecht:', choices=["M", "W", "D"])
 #myDlg.addText('Experiment Info')
 #myDlg.addField('Grating Ori:',45)
-myDlg.addField('Session:', choices=["Pain Type", "Pain Location"])
+myDlg.addField('Session:', choices=["Pain Location", "Pain Type"])
 myDlg.addField('Pain calibration?', choices=['Nein', 'Ja'])
 myDlg.addField('Cue order', choices=["1", "2", "3", "4", "5", "6"])
+myDlg.addField('Block type', choices=["1", "2"])
 ok_data = myDlg.show()  # show dialog and wait for OK or Cancel
 if myDlg.OK:  # or if ok_data is not None
     print(ok_data)
@@ -145,6 +152,7 @@ sex = ok_data[2]
 sessiontype = ok_data[3]
 paincalibrationYN = ok_data[4]
 cueorder = ok_data[5]
+thisblock = ok_data[6]
 
 
 # Can manually enter some temperatures from a previous calibration file if needed
@@ -154,8 +162,8 @@ cueorder = ok_data[5]
 #temperatures_debug = [42, 43, 44, 45, 46] # calibrate to the person's own thresholds?
 #temperatures_debug = [15, 25, 40, 45, 50] # calibrate to the person's own thresholds?
 #temperatures_debug = [40, 42, 44, 46, 48, 50, 52, 54, 56] # calibrate to the person's own thresholds?
-temperatures_debug = [48.5, 49.4, 50.3, 51.3, 52.2] # calibrate to the person's own thresholds?
-
+#temperatures_debug = [48.5, 49.4, 50.3, 51.3, 52.2] # calibrate to the person's own thresholds?
+temperatures_debug = [49.7, 50.6, 51.5, 52.4, 53.3] # calibrate to the person's own thresholds?
 
 
 # routine to quit the experiment e.g. at the end or when escape is pressed
@@ -170,8 +178,7 @@ def QuitExperiment():
     ## Closing Section
     datafilewrite.close()
     logfilewrite.close()
-    win.close()
-    winexp.close()
+    
     
     if eyetrack_mode:
         
@@ -190,6 +197,9 @@ def QuitExperiment():
         
         # close everything
         pylink.closeGraphics()
+        
+    win.close()
+    winexp.close()    
        
     core.quit()
 
@@ -206,15 +216,15 @@ def RecordAnswer():
     
     if keypress:
         if parallel_port_mode == True:
-            if keypress[0] == 1:
-                keypress[0] == "left" #recode to words
+            if keypress[0] == 0:
+                keypress[0] = "left" #recode to words
+                submittedanswer = True
+            elif keypress[0] == 1:
+                keypress[0] = "right" #recode to words
                 submittedanswer = True
             elif keypress[0] == 2:
-                keypress[0] == "right" #recode to words
-                submittedanswer = True
-            elif keypress[0] == 3:
                 pass
-            elif keypress[0] == 4:    
+            elif keypress[0] == 3:    
                 pass
             else:
                 print('Do you use the correct button box / keys?')
@@ -330,31 +340,56 @@ if eyetrack_mode:
         tk = pylink.EyeLink('100.1.1.1')
     else:
         tk = pylink.EyeLink(None)
-
-    # ==============================================================
-    # preparation
-    # ==============================================================
-    # Ensure that relative paths start from the same directory as this script
-    thisDir = os.path.dirname(os.path.abspath(__file__)).decode(sys.getfilesystemencoding())
-    os.chdir(thisDir)
-    
-    # Make data folder
-    if not os.path.isdir("data"):
-        os.makedirs("data")
-    
-    # filename with time stamp
-    timestamp = data.getDateStr(format='%Y%m%d_%H%M')
-    filename = thisDir + os.sep + 'data' + os.sep + 'eyetracking_demo_%s' % (timestamp) + '.edf'
-    
-    # in the DOS system you can only store up to 8 characters for the file name 
-    edf_running_name = 'demo.EDF'
-    
-    # open data file
-    tk.openDataFile(edf_running_name)
-    # add personalized data file header (preamble text)
-    tk.sendCommand("add_file_preamble_text 'Eyetracking Demo'")
-
-
+#
+#    # ==============================================================
+#    # preparation
+#    # ==============================================================
+#    # Ensure that relative paths start from the same directory as this script
+#    thisDir = os.path.dirname(os.path.abspath(__file__)).decode(sys.getfilesystemencoding())
+#    os.chdir(thisDir)
+#    
+#    # Make data folder
+#    if not os.path.isdir("data"):
+#        os.makedirs("data")
+#    
+#    # filename with time stamp
+#    timestamp = data.getDateStr(format='%Y%m%d_%H%M')
+#    filename = thisDir + os.sep + 'data' + os.sep + 'eyetracking_demo_%s' % (timestamp) + '.edf'
+#    
+#    # in the DOS system you can only store up to 8 characters for the file name 
+#    edf_running_name = 'demo.EDF'
+#    
+#    # open data file
+#    tk.openDataFile(edf_running_name)
+#    # add personalized data file header (preamble text)
+#    tk.sendCommand("add_file_preamble_text 'Eyetracking Demo'")
+#
+#    tk.setOfflineMode()  # we need to put the tracker in offline mode before we change its configurations
+#    tk.sendCommand('sample_rate 1000')  # 250, 500, 1000
+#    # inform the tracker the resolution of the subject display
+#    tk.sendCommand("screen_pixel_coords = 0 0 %d %d" % (scnWidth - 1, scnHeight - 1))
+#    # save display resolution in EDF data file for Data Viewer integration purposes
+#    tk.sendMessage("DISPLAY_COORDS = 0 0 %d %d" % (scnWidth - 1, scnHeight - 1))
+#    # specify the calibration type, H3, HV3, HV5, HV13 (HV = horizontal/vertical), 
+#    tk.sendCommand("calibration_type = HV9")  # HV9
+#    # specify the proportion of subject display to calibrate/validate (OPTIONAL, useful for wide screen monitors)
+#    tk.sendCommand("calibration_area_proportion 0.55 0.53") # 0.65 0.63
+#    # tk.sendCommand("validation_area_proportion  0.85 0.83")
+#    # the model of the tracker, 1-EyeLink I, 2-EyeLink II, 3-Newer models (1000/1000Plus/DUO)
+#    eyelinkVer = tk.getTrackerVersion()
+#    # Set the tracker to parse Events using "GAZE" (or "HREF") data
+#    tk.sendCommand("recording_parse_type = GAZE")
+#    # Online parser configuration: 0-> standard/cognitive, 1-> sensitive/psychophysiological
+#    # [see Eyelink User Manual, Section 4.3: EyeLink Parser Configuration]
+#    
+#    
+#    if not dummyMode:
+#        # set up the camera and calibrate the tracker at the beginning of each block
+#        tk.doTrackerSetup()
+#
+#    # take the tracker offline
+#    tk.setOfflineMode()
+#    pylink.pumpDelay(50)
 
 ###################################################################
 #          CALIBRATION
@@ -371,9 +406,11 @@ if paincalibrationYN == 'Ja':
     # ==============================================================
     def quitRoutine():
         print('Calibration aborted, calculating temperatures up to this point')
-            
-        (temperatures_calibrated, temp_30, temp_50, temp_75) = myFunctions.SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenamecalibrationdata)
-        datafilewritecalib.close()
+        
+        
+        if rating: #if non empty
+            (temperatures_calibrated, temp_30, temp_50, temp_75) = QST_functions.SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenamecalibrationdata)
+            datafilewritecalib.close()
             
         win.close()
         winexp.close()
@@ -381,30 +418,14 @@ if paincalibrationYN == 'Ja':
     
     whichSide = [0, 1] #0 = left, 1 = right
     random.shuffle(whichSide) #counterbalance order
+    #calibration_not_passed = True
+    
     
     for side in whichSide: #do it twice, for each arm/leg
-        
-        if side == 0:
-            sideString = "left"
-        else:
-            sideString = "right"
-            
-            
-        #save 2 separate calibration files for L and R
-        filenamecalibrationdata = "{}/calibration_{}_{}_{}_{}_{}_".format(directory, sub, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S'))
-        filenamecalibrationdata = filenamecalibrationdata + sideString + ".csv" #need separate files for L and R
-        
-        if thisOS == "Linux":
-            datafilewritecalib = open(filenamecalibrationdata, "w")
-        else:
-                datafilewritecalib = open(filenamecalibrationdata, "w", newline='') # windows
-        writercalib = csv.writer(datafilewritecalib, delimiter=";")
-        writercalib.writerow(["Temp", "Rating"]) # data calibration file column headers
-        
-        print('Calibration started...' + " " + sideString)
-        
-        
-        rating = []
+        calibration_not_passed = True
+        # ==============================================================
+        # TESTSTIMULI
+        # ==============================================================
         
         # generate text and rating scale objects     
         textObjExp = visual.TextStim(win=winexp, text="", color="black", height = 20, units="pix")
@@ -425,25 +446,23 @@ if paincalibrationYN == 'Ja':
         timerTrigger = core.Clock() # for duration of messages and triggers to brain amp and thermode
         timerRating=core.Clock() #for rating reaction time
         
-        if parallel_port_mode:
-            # initialize button boxes on port 0
-            bbox = bb.ButtonBox(port = 0, clock = timerRating)
-            # the port for communication with brainamp and thermode
-            p_port1 = parallel.Parallel(port=1)
-        else:
-            pass
-            #keyState = key.KeyStateHandler()  # to check the key status when using the keyboard
-            #win.winHandle.push_handlers(keyState)
+#        if parallel_port_mode:
+#            # initialize button boxes on port 0
+#            bbox = bb.ButtonBox(port = 0, clock = timerRating)
+#            # the port for communication with brainamp and thermode
+#            p_port1 = parallel.Parallel(port=1)
+#        else:
+#            pass
+#            #keyState = key.KeyStateHandler()  # to check the key status when using the keyboard
+#            #win.winHandle.push_handlers(keyState)
         
                   
             
         # Create some timers to manage the timing of routines within one trial
         routineClock = core.Clock() # runs forwards
-        routineTimer = core.CountdownTimer()  # runs backwards    
+        routineTimer = core.CountdownTimer()  # runs backwards 
         
-        # ==============================================================
-        # TESTSTIMULI
-        # ==============================================================
+        
         # Experimenter starts by pressing space
         textObjExp.setText(u"Press space to send some first test stimuli\n")
         textObjExp.setHeight(20)
@@ -516,187 +535,248 @@ if paincalibrationYN == 'Ja':
         
         #core.wait(1.0)
         #win.flip()
+                   
+        #########################    
+        # PROPER CALIBRATION
+        #########################
         
-   
-        
-        # ==============================================================
-        # START
-        # ==============================================================
-        # Experimenter starts by pressing space
-        textObjExp.setText(u"Press space to start calibration for {} side \n".format(sideString))
-        textObjExp.setHeight(20)
-        textObjExp.draw()
-        winexp.flip()
-        event.waitKeys(keyList=["space"])
-        textObjExp.setText("")
-        textObjExp.draw()
-        winexp.flip()
-        
-        rating = []
-        
-        # for debugging
-        temperatures_calibration_debugging = [
-            46.0, 47.0,
-            44.0, 48.0,
-            49.5, 47.0] 
-
-        
-        temperatures_calibration_real = [
-            46.0, 47.0,
-            44.0, 48.0,
-            49.5, 47.0,  
-            44.5, 48.5,
-            43.5, 49.0,
-            47.0, 48.0,
-            44.0, 45.0,
-            47.5, 44.0,
-            49.0, 46.5,
-            43.0, 44.5,
-            42.0, 45.5,
-            47.5, 42.5,
-            46.0, 43.0,
-            45.0, 48.5,
-            45.5, 42.5,
-            46.5, 45.0,
-            46.0, 43.5,
-            49.5, 42.0]
-        
-        random.shuffle(temperatures_calibration_real)
-        
-        temperatures_calibration = temperatures_calibration_real
-        #temperatures_calibration = temperatures_calibration_debugging  
-        random.shuffle(temperatures_calibration)
-            
-        for i, eachcalibrationtemp in enumerate(temperatures_calibration):
-            
-            # stimulate only 2 pads at a time, so 1+2 then 4+5 then 1+2 and so on, to prevent sensitization etc
-            if i % 2 == 0: # even number trial
-                requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, 31, 31]
-            else: # odd number trial
-                requiredtemperatures = [31, 31, 31, eachcalibrationtemp, eachcalibrationtemp]
-                    
-            
-            core.wait(1.0)
-            
-            # 1.5 s duration, 100 deg ramp up/down
-            if thermode:
-                if side == 0: #left
-                    QST_functions.Burn_left(requiredtemperatures, [stim_dur_calibration]*5, [100]*5, [100]*5)
-                else:  #right
-                    QST_functions.Burn_right(requiredtemperatures, [stim_dur_calibration]*5, [100]*5, [100]*5)
-            core.wait(5.0)
-            #check for quit (the Esc key)
-            if event.getKeys(keyList=["escape"]):
-                quitRoutine()
-            
-            submittedanswer = False
-            ratingPain.reset()
-            ratingPainExp.reset()
-            currentPos = 50
-            textObjSub.setText(u"Bitte bewerten Sie\ndie Intensität\ndieses Reizes\n")
-            
-            while not submittedanswer:
-                ratingPain.markerPlacedAt = currentPos
-                ratingPain.draw()
-                textObjSub.draw()
-                
-                ratingPainExp.markerPlacedAt = currentPos
-                ratingPainExp.draw()
-                
-                win.flip()
-                winexp.flip()
-                
-                if parallel_port_mode:
-                    bbox.reset()
-                    keypress = bbox.getButtons(timeStamped=False)
-                else:
-                    keypress = event.waitKeys(keyList=['left', 'right', 'escape', 'return']) #wait for Left Arrow or Right Arrow key
+        while calibration_not_passed:
+            redo = False
+            if side == 0:
+                sideString = "left"
+            else:
+                sideString = "right"
                 
                 
-                if keypress:
-                    if parallel_port_mode == True:
-                        # move left
-                        if keypress[0] == 1:
-                            currentPos = currentPos - 1
-                        # move right
-                        elif keypress[0] == 2:
-                            currentPos = currentPos + 1
-                        elif keypress[0] == 3:
-                            submittedanswer = True
-                        elif keypress[0] == 4:    
-                            pass
-                        else:
-                            print('Do you use the correct button box / keys?')
-                    else:
-                        # move left
-                        if keypress[0] == 'left':
-                            currentPos = currentPos - 1
-                        # move right
-                        elif keypress[0]  == 'right':
-                            currentPos = currentPos + 1
-                        elif keypress[0] == 'escape':
-                            quitRoutine()
-                        elif keypress[0] == 'return':
-                            submittedanswer = True
-                        else:
-                            print('Do you use the correct button box / keys?')
-                    
-                if currentPos > 100:
-                    currentPos = 100
-                elif currentPos < 0:
-                    currentPos = 0
-                ratingPain.markerPlacedAt = currentPos
-                ratingPain.draw()
-                textObjSub.draw()
-                ratingPainExp.markerPlacedAt = currentPos
-                ratingPainExp.draw()
-                win.flip()
-                winexp.flip()
-                #core.wait(0.01)        
-                    
-            # record answer
-            rating.append(ratingPain.getRating())
-            print([i, '   ', eachcalibrationtemp, '   ', rating[i]])
+            #save 2 separate calibration files for L and R
+            filenamecalibrationdata = "{}/calibration_{}_{}_{}_{}_{}_".format(directory, sub, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S'))
+            filenamecalibrationdata = filenamecalibrationdata + sideString + ".csv" #need separate files for L and R
             
+            if thisOS == "Linux":
+                datafilewritecalib = open(filenamecalibrationdata, "w")
+            else:
+                    datafilewritecalib = open(filenamecalibrationdata, "w", newline='') # windows
+            writercalib = csv.writer(datafilewritecalib, delimiter=";")
+            writercalib.writerow(["Temp", "Rating"]) # data calibration file column headers
+            
+            print('Calibration started...' + " " + sideString)
+            
+            
+            rating = []
+            
+               
+            
+        
+       
+            
+            # ==============================================================
+            # START
+            # ==============================================================
+            # Experimenter starts by pressing space
+            textObjExp.setText(u"Press space to start calibration for {} side \n Press R at any point during the rating scale to restart the calibration for the current side".format(sideString))
+            textObjExp.setHeight(20)
+            textObjExp.draw()
             winexp.flip()
-            win.flip()
+            event.waitKeys(keyList=["space"])
+            textObjExp.setText("")
+            textObjExp.draw()
+            winexp.flip()
             
- 
-        # Work out the key temperatures and write to file
-        (temperatures_calibrated, temp_30, temp_50, temp_75) = QST_functions.SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenamecalibrationdata)
-        datafilewritecalib.close()
-        
-        if side == 0:
-            temp30_left = temp_30
-            temp50_left = temp_50
-            temp75_left = temp_75
+            rating = []
             
-        else:
-            temp30_right = temp_30
-            temp50_right = temp_50
-            temp75_right = temp_75
-        
+            # for debugging
+            temperatures_calibration_debugging = [
+                46.0, 47.0,
+                44.0, 48.0,
+                49.5, 47.0] 
     
-    
-        # for resulting plot
-        img = visual.ImageStim(
-        win=winexp,
-        image=filenamecalibrationdata+".png",
-        units="norm",
-        pos = (0,0))
-    
-        img.draw()
-        textObjExp.pos = (0, -300)
-        textObjExp.setText('%.1f    %.1f     %.1f \nPress space when you are done' % (temp_30, temp_50, temp_75))
+            
+            temperatures_calibration_real = [
+                46.0, 47.0,
+                44.0, 48.0,
+                49.5, 47.0,  
+                44.5, 48.5,
+                43.5, 49.0,
+                47.0, 48.0,
+                44.0, 45.0,
+                47.5, 44.0,
+                49.0, 46.5,
+                43.0, 44.5,
+                42.0, 45.5,
+                47.5, 42.5,
+                46.0, 43.0,
+                45.0, 48.5,
+                45.5, 42.5,
+                46.5, 45.0,
+                46.0, 43.5,
+                49.5, 42.0,
+                50.0, 50.0,
+                50.5, 50.5,
+                51.0, 51.0]
+            
+            random.shuffle(temperatures_calibration_real)
+            
+            temperatures_calibration = temperatures_calibration_real
+            #temperatures_calibration = temperatures_calibration_debugging  
+            random.shuffle(temperatures_calibration)
+                
+            for i, eachcalibrationtemp in enumerate(temperatures_calibration):
+                print(redo)
+                print (i)
+                # stimulate only 2 pads at a time, so 1+2 then 4+5 then 1+2 and so on, to prevent sensitization etc
+                if i % 2 == 0: # even number trial
+                    requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, 31, 31]
+                else: # odd number trial
+                    requiredtemperatures = [31, 31, 31, eachcalibrationtemp, eachcalibrationtemp]
+                        
+                
+                core.wait(1.0)
+                
+                # 1.5 s duration, 100 deg ramp up/down
+                if thermode:
+                    if side == 0: #left
+                        QST_functions.Burn_left(requiredtemperatures, [stim_dur_calibration]*5, [100]*5, [100]*5)
+                    else:  #right
+                        QST_functions.Burn_right(requiredtemperatures, [stim_dur_calibration]*5, [100]*5, [100]*5)
+                core.wait(5.0)
+                #check for quit (the Esc key)
+                if event.getKeys(keyList=["escape"]):
+                    quitRoutine()
+                
+                submittedanswer = False
+                ratingPain.reset()
+                ratingPainExp.reset()
+                currentPos = 50
+                textObjSub.setText(u"Bitte bewerten Sie\ndie Intensität\ndieses Reizes\n")
+                
+                while not submittedanswer:
+                    ratingPain.markerPlacedAt = currentPos
+                    ratingPain.draw()
+                    textObjSub.draw()
+                    
+                    ratingPainExp.markerPlacedAt = currentPos
+                    ratingPainExp.draw()
+                    
+                    win.flip()
+                    winexp.flip()
+                    
+                    if parallel_port_mode:
+                        bbox.reset()
+                        keypress = bbox.getButtons(timeStamped=False)
+                    else:
+                        keypress = event.waitKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
+                    
+                    
+                    if keypress:
+                        if parallel_port_mode == True:
+                            print(keypress)
+                            # move left
+                            if keypress[0] == 0:
+                                currentPos = currentPos - 1
+                            # move right
+                            elif keypress[0] == 1:
+                                currentPos = currentPos + 1
+                            elif keypress[0] == 2:
+                                submittedanswer = True
+                            elif keypress[0] == 3:    
+                                pass
+                            else:
+                                print('Do you use the correct button box / keys?')
+                        else:
+                            print(keypress)
+                            # move left
+                            if keypress[0] == 'left':
+                                currentPos = currentPos - 1
+                            # move right
+                            elif keypress[0]  == 'right':
+                                currentPos = currentPos + 1
+                            elif keypress[0] == 'escape':
+                                quitRoutine()
+                            elif keypress[0] == 'return':
+                                submittedanswer = True
+                            elif keypress[0] == 'r':
+                                redo = True
+                                print("Redo = True")
+                                print(redo)
+                            else:
+                                print('Do you use the correct button box / keys?')
+                        
+                    if currentPos > 100:
+                        currentPos = 100
+                    elif currentPos < 0:
+                        currentPos = 0
+                    ratingPain.markerPlacedAt = currentPos
+                    ratingPain.draw()
+                    textObjSub.draw()
+                    ratingPainExp.markerPlacedAt = currentPos
+                    ratingPainExp.draw()
+                    win.flip()
+                    winexp.flip()
+                    #core.wait(0.01)        
+                        
+                # record answer
+                rating.append(ratingPain.getRating())
+                print([i, '   ', eachcalibrationtemp, '   ', rating[i]])
+                
+                winexp.flip()
+                win.flip()
+                if redo: #if need to restart the current side
+                    rating = []
+                    break
+            #end of for eachtemp loop
+     
+            # Work out the key temperatures and write to file
+            
+            if not redo:
+                (temperatures_calibrated, temp_30, temp_50, temp_75) = QST_functions.SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenamecalibrationdata)
+                datafilewritecalib.close()
+            
+                if side == 0:
+                    temp30_left = temp_30
+                    temp50_left = temp_50
+                    temp75_left = temp_75
+                    
+                else:
+                    temp30_right = temp_30
+                    temp50_right = temp_50
+                    temp75_right = temp_75
+                
+            
+            
+                # for resulting plot
+                img = visual.ImageStim(
+                win=winexp,
+                image=filenamecalibrationdata+".png",
+                units="norm",
+                pos = (0,0))
+            
+                img.draw()
+                textObjExp.pos = (0, -300)
+                textObjExp.setText('%.1f    %.1f     %.1f \nPress Y to accept, N to reject and try again' % (temp_30, temp_50, temp_75))
+                textObjExp.draw()
+                winexp.flip()
+                expkey = event.waitKeys(keyList=["y", "n"])
+                if expkey[0] == "y":
+                    print("calibrationpassed")
+                    calibration_not_passed = False
+                    textObjSub.setText("Sehr gut! \nDie Kalibrierung ist beendet.")
+                else:
+                    textObjSub.setText("Es ist leider ein Fehler aufgetreten, versuchen wir es noch einmal.")
+                    
+                
+                
+                textObjSub.setText("Sehr gut! \nDie Kalibrierung ist beendet.")
+                textObjSub.draw()
+                win.flip()
+            
+            
+            
+        textObjExp.setText('Press space')
         textObjExp.draw()
-        winexp.flip()
-        textObjSub.setText("Sehr gut! \nDie Kalibrierung ist beendet.")
-        textObjSub.draw()
-        win.flip()
-    
+        winexp.flip()    
         event.waitKeys(keyList=["space"])
-        
-        #end of for eachtemp loop
+            
+            
     
     #print("About to show fix during if statememnts...")
     
@@ -775,73 +855,131 @@ stimuli_list = []
 
 
 # Create list of stims
+# There will be some differences for the 3 blocks because of the specific number of trials and
+# combinations of everything. Basically, can't divide all the trials into any number such that there is an
+# even number of every combination of everything across the blocks
+# N trials to create is N trials per pt divided by 3 blocks divided by 2 (half control first, half control second)
 if sessiontype == "Pain Type":
     for temperature_intensity in mytemperatures: #for each stimulus temperature
-        for i in range(numpy.int(trialsperpointhigh/2)): #thermal high thermal presented, control position 1
+        for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 1
             stimuli_list.append([i+1, "ThermalHigh_thermal", 1, temperature_intensity, 0])
-        for i in range(numpy.int(trialsperpointhigh/2)): #thermal high thermal presented, control position 2
+        for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 2
             stimuli_list.append([i+1, "ThermalHigh_thermal", 1, temperature_intensity, 1])
             
-        for i in range(numpy.int(trialsperpointlow/2)): # mechano high thermal presented, control position 1
+        for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 1
             stimuli_list.append([i+1, "MechanoHigh_thermal", 4, temperature_intensity, 0])       
-        for i in range(numpy.int(trialsperpointlow/2)): # mechano high thermal presented, control position 2
+        for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 2
             stimuli_list.append([i+1, "MechanoHigh_thermal", 4, temperature_intensity, 1])  
             
-        for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 1
-            stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 0])  
-        for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 2
-            stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 1])      
-    
+        #something a bit different needs to happen for the no expectation because of the odd N of trials
+        # note the ceil and floor, instead of just int
+        if thisblock == "1":
+            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect thermal presented, control position 1
+                stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 0])  
+            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect thermal presented, control position 2
+                stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 1])
+        elif thisblock == "2":
+            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect thermal presented, control position 1
+                stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 0])  
+            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect thermal presented, control position 2
+                stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 1])
+        elif thisblock == "3":
+            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect thermal presented, control position 1
+                stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 0])  
+            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect thermal presented, control position 2
+                stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 1])
+                
     for mechintensity in mechanicalinstensities:
-        for i in range(numpy.int(trialsperpointlow/2)): # thermal high mechano presented, control position 1
+        for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 1
             stimuli_list.append([i+1, "ThermalHigh_mechano", 2, mechintensity, 0])    
-        for i in range(numpy.int(trialsperpointlow/2)): # thermal high mechano presented, control position 2
+        for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 2
             stimuli_list.append([i+1, "ThermalHigh_mechano", 2, mechintensity, 1]) 
             
-        for i in range(numpy.int(trialsperpointhigh/2)): # mechano high mechano presented, control position 1
+        for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 1
             stimuli_list.append([i+1, "MechanoHigh_mechano", 3, mechintensity, 0]) 
-        for i in range(numpy.int(trialsperpointhigh/2)): # mechano high mechano presented, control position 2
+        for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 2
             stimuli_list.append([i+1, "MechanoHigh_mechano", 3, mechintensity, 1]) 
-            
-        for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 1
-            stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 0])   
-        for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 2
-            stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 1])      
+        
+        #something a bit different needs to happen for the no expectation because of the odd N of trials
+        # note the ceil and floor, instead of just int
+        if thisblock == "1":
+            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect mechano presented, control position 1
+                stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 0])   
+            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect mechano presented, control position 2
+                stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 1])   
+        elif thisblock == "2":
+            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect mechano presented, control position 1
+                stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 0])   
+            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect mechano presented, control position 2
+                stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 1]) 
+        elif thisblock == "3":     
+            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect mechano presented, control position 1
+                stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 0])   
+            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect mechano presented, control position 2
+                stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 1])                         
             
 elif sessiontype == "Pain Location": #same location but only thermal for now
     
         for temperature_intensity in mytemperatures: #for each stimulus temperature
-            for i in range(numpy.int(trialsperpointhigh/2)): #thermal high thermal presented, control position 1
+            for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 1
                 stimuli_list.append([i+1, "LeftHigh_Left", 1, temperature_intensity, 0])
-            for i in range(numpy.int(trialsperpointhigh/2)): #thermal high thermal presented, control position 2
+            for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 2
                 stimuli_list.append([i+1, "LeftHigh_Left", 1, temperature_intensity, 1])
                 
-            for i in range(numpy.int(trialsperpointlow/2)): # mechano high thermal presented, control position 1
+            for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 1
                 stimuli_list.append([i+1, "RightHigh_Left", 4, temperature_intensity, 0])       
-            for i in range(numpy.int(trialsperpointlow/2)): # mechano high thermal presented, control position 2
+            for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 2
                 stimuli_list.append([i+1, "RightHigh_left", 4, temperature_intensity, 1])  
-                
-            for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 1
-                stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 0])  
-            for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 2
-                stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])             
-                
-            for i in range(numpy.int(trialsperpointlow/2)): # thermal high mechano presented, control position 1
+                            
+            #something a bit different needs to happen for the no expectation because of the odd N of trials
+            # note the ceil and floor, instead of just int    
+            if thisblock == "1":
+                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect left presented, control position 1
+                    stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 0])  
+                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect left presented, control position 2
+                    stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])             
+            elif thisblock == "2":
+                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect left presented, control position 1
+                    stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 0])  
+                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect left presented, control position 2
+                    stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])  
+            elif thisblock == "3":
+                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect left presented, control position 1
+                    stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 0])  
+                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect left presented, control position 2
+                    stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])  
+
+            
+            for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 1
                 stimuli_list.append([i+1, "LeftHigh_Right", 2, temperature_intensity, 0])    
-            for i in range(numpy.int(trialsperpointlow/2)): # thermal high mechano presented, control position 2
+            for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 2
                 stimuli_list.append([i+1, "LeftHigh_Right", 2, temperature_intensity, 1]) 
                 
-            for i in range(numpy.int(trialsperpointhigh/2)): # mechano high mechano presented, control position 1
+            for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 1
                 stimuli_list.append([i+1, "RightHigh_Right", 3, temperature_intensity, 0]) 
-            for i in range(numpy.int(trialsperpointhigh/2)): # mechano high mechano presented, control position 2
+            for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 2
                 stimuli_list.append([i+1, "RightHigh_Right", 3, temperature_intensity, 1]) 
                 
-            for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 1
-                stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 0])   
-            for i in range(numpy.int(noexpectation/2)): # mechano high mechano presented, control position 2
-                stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 1])      
-    
-#print(stimuli_list)
+                
+                
+            #something a bit different needs to happen for the no expectation because of the odd N of trials
+            # note the ceil and floor, instead of just int    
+            if thisblock == "1":   
+                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect right presented, control position 1
+                    stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 0])   
+                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect right presented, control position 2
+                    stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 1])      
+            elif thisblock == "2":
+                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect right presented, control position 1
+                    stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 0])   
+                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect right presented, control position 2
+                    stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 1])
+            elif thisblock == "3":
+                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect right presented, control position 1
+                    stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 0])   
+                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect right presented, control position 2
+                    stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 1])
+print(stimuli_list)
 #print(stimuli_list[0]) # [1, 'ThermalHigh_thermal']
 #print(stimuli_list[0][0]) # 1
 #print(stimuli_list[1]) # [2, 'ThermalHigh_thermal']
@@ -950,15 +1088,15 @@ if eyetrack_mode:
     
     # filename with time stamp
     timestamp = data.getDateStr(format='%Y%m%d_%H%M')
-    filename = thisDir + os.sep + 'data' + os.sep + 'eyetracking_demo_%s' % (timestamp) + '.edf'
+    filenameeyetrack = thisDir + os.sep + 'data' + os.sep + 'eyetracking_%s' % (timestamp) + filename +'.edf'
     
     # in the DOS system you can only store up to 8 characters for the file name 
-    edf_running_name = 'demo.EDF'
+    edf_running_name = 'data.EDF'
     
     # open data file
     tk.openDataFile(edf_running_name)
     # add personalized data file header (preamble text)
-    tk.sendCommand("add_file_preamble_text 'Eyetracking Demo'")
+    tk.sendCommand("add_file_preamble_text 'Eyetracking Data'")
     
     
 #    # define monitor for correct eye tracking
@@ -997,8 +1135,8 @@ if eyetrack_mode:
     # specify the calibration type, H3, HV3, HV5, HV13 (HV = horizontal/vertical), 
     tk.sendCommand("calibration_type = HV9")  # default HV9
     # specify the proportion of subject display to calibrate/validate (OPTIONAL, useful for wide screen monitors)
-    tk.sendCommand("calibration_area_proportion 0.85 0.83") # default 0.85 0.83
-    tk.sendCommand("validation_area_proportion  0.85 0.83") # default 0.85 0.83
+    tk.sendCommand("calibration_area_proportion 0.65 0.63") # default 0.85 0.83
+    tk.sendCommand("validation_area_proportion  0.65 0.63") # default 0.85 0.83
     # the model of the tracker, 1-EyeLink I, 2-EyeLink II, 3-Newer models (1000/1000Plus/DUO)
     eyelinkVer = tk.getTrackerVersion()
     # Set the tracker to parse Events using "GAZE" (or "HREF") data
@@ -1228,6 +1366,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     winexp.flip()
     getready = core.getTime() # set our time = 0 for future calcs
     if eyetrack_mode:
+        tk.sendMessage("Trial %d" % trial+1)
         tk.sendMessage("Get ready")
     writerlog.writerow(["Start of Trial %d // Get ready" % trial, "Absolute Time", "Time since t0 [t0 = start of expt]", "Time since trial onset [since getready]"])
     writerlog.writerow(["Start of Trial %d // Get ready" % trial, getready, core.getTime()-t0, core.getTime()-getready])
@@ -1439,7 +1578,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     ## Record response 
     ############################
     #core.wait(1.0)
-    myFunctions.showText(win, 'welche Stimulus ist schmerzhafter?', (1, 1, 1))
+    myFunctions.showText(win, 'welcher Reiz ist schmerzhafter?', (1, 1, 1))
     win.flip()
     RTstart = clock.getTime()
     print(("Response onset ", RTstart - getready))
@@ -1471,12 +1610,12 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
                     RTend = clock.getTime()
                     RT.append(RTend-RTstart)
         print("Temperature rec finished, elapsed time: " + str(currtime - start_time))
-        while not submittedanswer: #in case the answer was not given during the temperature recording phase
-                #print("Recording ans")  
-                [submittedanswer, keypress] = RecordAnswer()
-                if submittedanswer:
-                    RTend = clock.getTime()
-                    RT.append(RTend-RTstart)    
+    while not submittedanswer: #in case the answer was not given during the temperature recording phase
+            #print("Recording ans")  
+            [submittedanswer, keypress] = RecordAnswer()
+            if submittedanswer:
+                RTend = clock.getTime()
+                RT.append(RTend-RTstart)    
                             
     
     print("start: {}, end: {}, RT: {}".format(RTstart, RTend, RTend-RTstart))
