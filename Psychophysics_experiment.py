@@ -5,7 +5,7 @@ from psychopy import core, clock, data, visual, event, gui, monitors, logging #p
 import csv, random, time, numpy, sys, platform, os
 from pyglet.window import key
 import matplotlib.pyplot as plt # for plotting the results
-#import parallel
+import parallel
 from scipy.io import savemat
 
 logging.console.setLevel(logging.WARNING)
@@ -37,18 +37,18 @@ else:
 # *********************************************************    
 
 # used computer has a parallel port (for the button boxes)
-parallel_port_mode = False
+parallel_port_mode = True
 
 # eyetracking
-eyetrack_mode = False
+eyetrack_mode = True
 
 #brain amp mode
-brainAmp = False
+brainAmp = True
 
 #thermode
-thermode = False
-whichComputer = "Home" #python3
-#whichComputer = "LaserLab" #python2
+thermode = True
+#whichComputer = "Home" #python3
+whichComputer = "LaserLab" #python2
 
 if whichComputer == "LaserLab":
     sys.path.insert(1, '/NOBACKUP2/Controlling_QST/')
@@ -163,7 +163,9 @@ thisblock = ok_data[6]
 #temperatures_debug = [15, 25, 40, 45, 50] # calibrate to the person's own thresholds?
 #temperatures_debug = [40, 42, 44, 46, 48, 50, 52, 54, 56] # calibrate to the person's own thresholds?
 #temperatures_debug = [48.5, 49.4, 50.3, 51.3, 52.2] # calibrate to the person's own thresholds?
-temperatures_debug = [49.7, 50.6, 51.5, 52.4, 53.3] # calibrate to the person's own thresholds?
+#temperatures_debug = [49.7, 50.6, 51.5, 52.4, 53.3] # calibrate to the person's own thresholds?
+#temperatures_debug = [49.2, 50.2, 51.3, 52.3, 53.3] # calibrate to the person's own thresholds?
+temperatures_debug = [51.3, 52.5, 53.6, 54.8, 55.9] # calibrate to the person's own thresholds?
 
 
 # routine to quit the experiment e.g. at the end or when escape is pressed
@@ -189,7 +191,7 @@ def QuitExperiment():
         tk.setOfflineMode()
         tk.closeDataFile()
         pylink.pumpDelay(50)
-        tk.receiveDataFile(edf_running_name, filename)
+        tk.receiveDataFile(edf_running_name, filenameeyetrack)
         
         
         # close the link to the tracker
@@ -259,11 +261,11 @@ def RecordAnswer():
 # **************************************************
 
 ## Data file
-filename="{}data_{}_{}_{}_{}_{}.csv".format(directory, sub, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filenamedata="{}data_{}_{}_{}_{}_{}.csv".format(directory, sub, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
 if thisOS == "Linux":
-    datafilewrite = open(filename, "w")
+    datafilewrite = open(filenamedata, "w")
 else:
-    datafilewrite = open(filename, "w", newline='') # windows
+    datafilewrite = open(filenamedata, "w", newline='') # windows
 writer = csv.writer(datafilewrite, delimiter=";")
 writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity", "Comparison Intensity", "Position of Control", "Sub Resp Raw", "Sub Resp Comparison More Pain", "RT"]) # data file column headers
 
@@ -623,11 +625,12 @@ if paincalibrationYN == 'Ja':
             for i, eachcalibrationtemp in enumerate(temperatures_calibration):
                 print(redo)
                 print (i)
-                # stimulate only 2 pads at a time, so 1+2 then 4+5 then 1+2 and so on, to prevent sensitization etc
+                # (stimulate only 2 pads at a time, so 1+2 then 4+5 then 1+2 and so on, to prevent sensitization etc)
+                # changed now to 4 pads at a time after some feedback
                 if i % 2 == 0: # even number trial
-                    requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, 31, 31]
+                    requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, eachcalibrationtemp, eachcalibrationtemp]
                 else: # odd number trial
-                    requiredtemperatures = [31, 31, 31, eachcalibrationtemp, eachcalibrationtemp]
+                    requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, eachcalibrationtemp, eachcalibrationtemp]
                         
                 
                 core.wait(1.0)
@@ -859,105 +862,106 @@ stimuli_list = []
 # combinations of everything. Basically, can't divide all the trials into any number such that there is an
 # even number of every combination of everything across the blocks
 # N trials to create is N trials per pt divided by 3 blocks divided by 2 (half control first, half control second)
+# Important: do 3.0 / 2.0 rather than 3 / 2 in python 2 to get a float result!!!
 if sessiontype == "Pain Type":
     for temperature_intensity in mytemperatures: #for each stimulus temperature
-        for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 1
+        for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): #thermal high thermal presented, control position 1
             stimuli_list.append([i+1, "ThermalHigh_thermal", 1, temperature_intensity, 0])
-        for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 2
+        for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): #thermal high thermal presented, control position 2
             stimuli_list.append([i+1, "ThermalHigh_thermal", 1, temperature_intensity, 1])
             
-        for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 1
+        for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # mechano high thermal presented, control position 1
             stimuli_list.append([i+1, "MechanoHigh_thermal", 4, temperature_intensity, 0])       
-        for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 2
+        for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # mechano high thermal presented, control position 2
             stimuli_list.append([i+1, "MechanoHigh_thermal", 4, temperature_intensity, 1])  
             
         #something a bit different needs to happen for the no expectation because of the odd N of trials
         # note the ceil and floor, instead of just int
         if thisblock == "1":
-            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect thermal presented, control position 1
+            for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect thermal presented, control position 1
                 stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 0])  
-            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect thermal presented, control position 2
+            for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect thermal presented, control position 2
                 stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 1])
         elif thisblock == "2":
-            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect thermal presented, control position 1
+            for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect thermal presented, control position 1
                 stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 0])  
-            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect thermal presented, control position 2
+            for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect thermal presented, control position 2
                 stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 1])
         elif thisblock == "3":
-            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect thermal presented, control position 1
+            for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect thermal presented, control position 1
                 stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 0])  
-            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect thermal presented, control position 2
+            for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect thermal presented, control position 2
                 stimuli_list.append([i+1, "Noexpect_thermal", 5, temperature_intensity, 1])
                 
     for mechintensity in mechanicalinstensities:
-        for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 1
+        for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # thermal high mechano presented, control position 1
             stimuli_list.append([i+1, "ThermalHigh_mechano", 2, mechintensity, 0])    
-        for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 2
+        for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # thermal high mechano presented, control position 2
             stimuli_list.append([i+1, "ThermalHigh_mechano", 2, mechintensity, 1]) 
             
-        for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 1
+        for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): # mechano high mechano presented, control position 1
             stimuli_list.append([i+1, "MechanoHigh_mechano", 3, mechintensity, 0]) 
-        for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 2
+        for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): # mechano high mechano presented, control position 2
             stimuli_list.append([i+1, "MechanoHigh_mechano", 3, mechintensity, 1]) 
         
         #something a bit different needs to happen for the no expectation because of the odd N of trials
         # note the ceil and floor, instead of just int
         if thisblock == "1":
-            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect mechano presented, control position 1
+            for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect mechano presented, control position 1
                 stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 0])   
-            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect mechano presented, control position 2
+            for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect mechano presented, control position 2
                 stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 1])   
         elif thisblock == "2":
-            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect mechano presented, control position 1
+            for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect mechano presented, control position 1
                 stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 0])   
-            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect mechano presented, control position 2
+            for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect mechano presented, control position 2
                 stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 1]) 
         elif thisblock == "3":     
-            for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect mechano presented, control position 1
+            for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect mechano presented, control position 1
                 stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 0])   
-            for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect mechano presented, control position 2
+            for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect mechano presented, control position 2
                 stimuli_list.append([i+1, "Noexpect_mechano", 6, mechintensity, 1])                         
             
 elif sessiontype == "Pain Location": #same location but only thermal for now
     
         for temperature_intensity in mytemperatures: #for each stimulus temperature
-            for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 1
+            for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): #thermal high thermal presented, control position 1
                 stimuli_list.append([i+1, "LeftHigh_Left", 1, temperature_intensity, 0])
-            for i in range(numpy.int(trialsperpointhigh/3/2)): #thermal high thermal presented, control position 2
+            for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): #thermal high thermal presented, control position 2
                 stimuli_list.append([i+1, "LeftHigh_Left", 1, temperature_intensity, 1])
                 
-            for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 1
+            for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # mechano high thermal presented, control position 1
                 stimuli_list.append([i+1, "RightHigh_Left", 4, temperature_intensity, 0])       
-            for i in range(numpy.int(trialsperpointlow/3/2)): # mechano high thermal presented, control position 2
+            for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # mechano high thermal presented, control position 2
                 stimuli_list.append([i+1, "RightHigh_left", 4, temperature_intensity, 1])  
                             
             #something a bit different needs to happen for the no expectation because of the odd N of trials
             # note the ceil and floor, instead of just int    
             if thisblock == "1":
-                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect left presented, control position 1
+                for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect left presented, control position 1
                     stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 0])  
-                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect left presented, control position 2
+                for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect left presented, control position 2
                     stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])             
             elif thisblock == "2":
-                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect left presented, control position 1
+                for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect left presented, control position 1
                     stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 0])  
-                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect left presented, control position 2
+                for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect left presented, control position 2
                     stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])  
             elif thisblock == "3":
-                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect left presented, control position 1
+                for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect left presented, control position 1
                     stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 0])  
-                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect left presented, control position 2
+                for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect left presented, control position 2
                     stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])  
 
             
-            for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 1
+            for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # thermal high mechano presented, control position 1
                 stimuli_list.append([i+1, "LeftHigh_Right", 2, temperature_intensity, 0])    
-            for i in range(numpy.int(trialsperpointlow/3/2)): # thermal high mechano presented, control position 2
+            for i in range(numpy.int(trialsperpointlow/3.0/2.0)): # thermal high mechano presented, control position 2
                 stimuli_list.append([i+1, "LeftHigh_Right", 2, temperature_intensity, 1]) 
                 
-            for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 1
+            for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): # mechano high mechano presented, control position 1
                 stimuli_list.append([i+1, "RightHigh_Right", 3, temperature_intensity, 0]) 
-            for i in range(numpy.int(trialsperpointhigh/3/2)): # mechano high mechano presented, control position 2
+            for i in range(numpy.int(trialsperpointhigh/3.0/2.0)): # mechano high mechano presented, control position 2
                 stimuli_list.append([i+1, "RightHigh_Right", 3, temperature_intensity, 1]) 
                 
                 
@@ -965,19 +969,19 @@ elif sessiontype == "Pain Location": #same location but only thermal for now
             #something a bit different needs to happen for the no expectation because of the odd N of trials
             # note the ceil and floor, instead of just int    
             if thisblock == "1":   
-                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect right presented, control position 1
+                for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect right presented, control position 1
                     stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 0])   
-                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect right presented, control position 2
+                for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect right presented, control position 2
                     stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 1])      
             elif thisblock == "2":
-                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect right presented, control position 1
+                for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect right presented, control position 1
                     stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 0])   
-                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect right presented, control position 2
+                for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect right presented, control position 2
                     stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 1])
             elif thisblock == "3":
-                for i in range(numpy.int(numpy.ceil(noexpectation/3/2))): # no expect right presented, control position 1
+                for i in range(numpy.int(numpy.ceil(noexpectation/3.0/2.0))): # no expect right presented, control position 1
                     stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 0])   
-                for i in range(numpy.int(numpy.floor(noexpectation/3/2))): # no expect right presented, control position 2
+                for i in range(numpy.int(numpy.floor(noexpectation/3.0/2.0))): # no expect right presented, control position 2
                     stimuli_list.append([i+1, "Noexpect_Right", 6, temperature_intensity, 1])
 print(stimuli_list)
 #print(stimuli_list[0]) # [1, 'ThermalHigh_thermal']
@@ -1088,7 +1092,7 @@ if eyetrack_mode:
     
     # filename with time stamp
     timestamp = data.getDateStr(format='%Y%m%d_%H%M')
-    filenameeyetrack = thisDir + os.sep + 'data' + os.sep + 'eyetracking_%s' % (timestamp) + filename +'.edf'
+    filenameeyetrack = thisDir + os.sep + 'data' + os.sep + 'eyetracking_%s' % (timestamp) + str(sub) + str(sex) + str(age) + str(sessiontype) +'.edf'
     
     # in the DOS system you can only store up to 8 characters for the file name 
     edf_running_name = 'data.EDF'
@@ -1366,7 +1370,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     winexp.flip()
     getready = core.getTime() # set our time = 0 for future calcs
     if eyetrack_mode:
-        tk.sendMessage("Trial %d" % trial+1)
+        tk.sendMessage("Trial " + str(trial+1))
         tk.sendMessage("Get ready")
     writerlog.writerow(["Start of Trial %d // Get ready" % trial, "Absolute Time", "Time since t0 [t0 = start of expt]", "Time since trial onset [since getready]"])
     writerlog.writerow(["Start of Trial %d // Get ready" % trial, getready, core.getTime()-t0, core.getTime()-getready])
