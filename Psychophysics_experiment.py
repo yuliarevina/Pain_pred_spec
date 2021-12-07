@@ -37,16 +37,16 @@ else:
 # *********************************************************    
 
 # used computer has a parallel port (for the button boxes)
-parallel_port_mode = True
+parallel_port_mode = False
 
 # eyetracking
-eyetrack_mode = True
+eyetrack_mode = False
 
 #brain amp mode
-brainAmp = True
+brainAmp = False
 
 #thermode
-thermode = True
+thermode = False
 #whichComputer = "Home" #python3
 whichComputer = "LaserLab" #python2
 
@@ -105,10 +105,11 @@ mytemperatures = [47]*5 # target temperatures in C for the 5 zones
 ## stimulus durations and parameters
 stim_dur_calibration = 1.5 #in seconds
 stim_dur_main_expt = 1 #in seconds
-delay_after_stim_calibration = 3.5
+delay_after_stim_calibration = 8.0
 delay_after_stim_main_experiment = 3.0 #how long to wait after stim onset, so if stim is 1s long,
 #then this give 2s afterwards before rating scale
-delay_before_stim_main_experiment = 5.0 #gives time for experimenter to start the stimulus (for pinpricks it's manually driven)
+delay_before_stim_main_experiment = 8.0 #gives time for experimenter to start the stimulus (for pinpricks it's manually driven)
+#5 s countdown plus around 3 s extra (the exact time will be jittered) because 8s min ISI is good. With the jitter will be between 8 and 10
 stimonsetTimer = core.CountdownTimer(delay_before_stim_main_experiment)  # runs backwards
 #stimonsetTimer.add(delay_before_stim_main_experiment)
 # how to use
@@ -165,7 +166,9 @@ thisblock = ok_data[6]
 #temperatures_debug = [48.5, 49.4, 50.3, 51.3, 52.2] # calibrate to the person's own thresholds?
 #temperatures_debug = [49.7, 50.6, 51.5, 52.4, 53.3] # calibrate to the person's own thresholds?
 #temperatures_debug = [49.2, 50.2, 51.3, 52.3, 53.3] # calibrate to the person's own thresholds?
-temperatures_debug = [51.3, 52.5, 53.6, 54.8, 55.9] # calibrate to the person's own thresholds?
+#temperatures_debug = [51.3, 52.5, 53.6, 54.8, 55.9] # calibrate to the person's own thresholds?
+#temperatures_debug = [47.8, 48.5, 49.2, 49.9, 50.6] # calibrate to the person's own thresholds?
+temperatures_debug = [49.8, 50.5, 51.2, 51.9, 52.6] # calibrate to the person's own thresholds?
 
 
 # routine to quit the experiment e.g. at the end or when escape is pressed
@@ -217,6 +220,11 @@ def RecordAnswer():
         #submittedanswer = True
     
     if keypress:
+        # participant can use both L and R response pads to give answer
+        # L button of each one is LEFT
+        # R button of each one is RIGHT
+        # People report it is easier to use L response pad when stim appears on the left
+        # and R response pad when stimulus appears on the right
         if parallel_port_mode == True:
             if keypress[0] == 0:
                 keypress[0] = "left" #recode to words
@@ -225,9 +233,11 @@ def RecordAnswer():
                 keypress[0] = "right" #recode to words
                 submittedanswer = True
             elif keypress[0] == 2:
-                pass
+                keypress[0] = "left" #recode to words
+                submittedanswer = True
             elif keypress[0] == 3:    
-                pass
+                keypress[0] = "right" #recode to words
+                submittedanswer = True
             else:
                 print('Do you use the correct button box / keys?')
         else:
@@ -267,7 +277,7 @@ if thisOS == "Linux":
 else:
     datafilewrite = open(filenamedata, "w", newline='') # windows
 writer = csv.writer(datafilewrite, delimiter=";")
-writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity", "Comparison Intensity", "Position of Control", "Sub Resp Raw", "Sub Resp Comparison More Pain", "RT"]) # data file column headers
+writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity", "Comparison Intensity", "Position of Control", "Sub Resp Raw", "Sub Resp Comparison More Pain", "RT (s)", "Delay before stim (s)"]) # data file column headers
 
 
 ## Log file (prints out key events, for timing etc)
@@ -409,10 +419,10 @@ if paincalibrationYN == 'Ja':
     def quitRoutine():
         print('Calibration aborted, calculating temperatures up to this point')
         
-        
-        if rating: #if non empty
-            (temperatures_calibrated, temp_30, temp_50, temp_75) = QST_functions.SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenamecalibrationdata)
-            datafilewritecalib.close()
+        # this is not properly implemented yet
+#        if rating: #if non empty
+#            (temperatures_calibrated, temp_30, temp_50, temp_75) = QST_functions.SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenamecalibrationdata)
+#            datafilewritecalib.close()
             
         win.close()
         winexp.close()
@@ -425,6 +435,15 @@ if paincalibrationYN == 'Ja':
     
     for side in whichSide: #do it twice, for each arm/leg
         calibration_not_passed = True
+        
+        
+        if side == 0:
+            sideString = "left"
+            sideStringDE = "LINKS"
+        else:
+            sideString = "right"
+            sideStringDE = "RECHTS"
+        
         # ==============================================================
         # TESTSTIMULI
         # ==============================================================
@@ -466,16 +485,16 @@ if paincalibrationYN == 'Ja':
         
         
         # Experimenter starts by pressing space
-        textObjExp.setText(u"Press space to send some first test stimuli\n")
+        textObjExp.setText(u"Press space to send some first test stimuli\n" + " on the " + sideString + " side")
         textObjExp.setHeight(20)
         textObjExp.draw()
         winexp.flip()
         event.waitKeys(keyList=["space"])
-        textObjExp.setText(u"Applying test stimuli")
+        textObjExp.setText(u"Applying test stimuli" + "on the " + sideString + " side")
         textObjExp.draw()
         winexp.flip()
         textObjSub.setText(u'Zu Beginn werden wir einige kurze Hitzereize verabreichen, um die Hautstelle daran zu gewöhnen.\n'+\
-                        u'Der erste Reiz kommt aus dem warmen Bereich.')
+                        u'Der erste Reiz kommt aus dem warmen Bereich.\n' + sideStringDE)
         textObjSub.draw()
         win.flip()
         core.wait(5.0)
@@ -483,20 +502,22 @@ if paincalibrationYN == 'Ja':
         
         
         ## new USB stuff for QST thermode
-        if side == 0: #left
-            QST_functions.Burn_left([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
-        else:  #right
-            QST_functions.Burn_right([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
+        if thermode:
+            if side == 0: #left
+                QST_functions.Burn_left([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
+            else:  #right
+                QST_functions.Burn_right([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
         core.wait(5.0)
         
         textObjSub.setText(u'Der zweite Reiz ist genau der gleiche Reiz wie der erste.')
         textObjSub.draw()
         win.flip()
         core.wait(5.0)
-        if side == 0: #left
-            QST_functions.Burn_left([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
-        else:  #right
-            QST_functions.Burn_right([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
+        if thermode:
+            if side == 0: #left
+                QST_functions.Burn_left([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
+            else:  #right
+                QST_functions.Burn_right([45, 45, 45, 45, 45], [1]*5, [100]*5, [100]*5)
         core.wait(5.0)
         
         #core.wait(3.0)
@@ -512,18 +533,18 @@ if paincalibrationYN == 'Ja':
         textObjSub.setText(u'Der nächste Reiz ist aus dem schmerzhaften Bereich.')
         textObjSub.draw()
         win.flip()
-        core.wait(3.0)
+        core.wait(5.0)
         timerRating.reset()
         # send signal to thermode
 #        if parallel_port_mode:
 #            while timerRating.getTime() <= thermode_trigger_dur:
 #                p_port1.setData(int("00010000", 2))  # sets pin 6 high
 #            p_port1.setData(0)  # set all pins low
-               
-        if side == 0: #left
-            QST_functions.Burn_left([47, 47, 47, 47, 47], [1]*5, [100]*5, [100]*5)
-        else:  #right
-            QST_functions.Burn_right([47, 47, 47, 47, 47], [1]*5, [100]*5, [100]*5)
+        if thermode:       
+            if side == 0: #left
+                   QST_functions.Burn_left([48, 48, 48, 48, 48], [1]*5, [100]*5, [100]*5)
+            else:  #right
+                   QST_functions.Burn_right([48, 48, 48, 48, 48], [1]*5, [100]*5, [100]*5)
         
         core.wait(5.0)
         
@@ -578,6 +599,9 @@ if paincalibrationYN == 'Ja':
             textObjExp.setText(u"Press space to start calibration for {} side \n Press R at any point during the rating scale to restart the calibration for the current side".format(sideString))
             textObjExp.setHeight(20)
             textObjExp.draw()
+            textObjSub.setText(u'Die Kalibrierung beginnt demnächst.')
+            textObjSub.draw()
+            win.flip()
             winexp.flip()
             event.waitKeys(keyList=["space"])
             textObjExp.setText("")
@@ -633,7 +657,8 @@ if paincalibrationYN == 'Ja':
                     requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, eachcalibrationtemp, eachcalibrationtemp]
                         
                 
-                core.wait(1.0)
+                core.wait(delay_after_stim_calibration + random.uniform(0, 2)) #wait the delay (probably around 8s, defined above, plus a random jitter,
+                # so that the total delay is 8-10 s)
                 
                 # 1.5 s duration, 100 deg ramp up/down
                 if thermode:
@@ -641,7 +666,7 @@ if paincalibrationYN == 'Ja':
                         QST_functions.Burn_left(requiredtemperatures, [stim_dur_calibration]*5, [100]*5, [100]*5)
                     else:  #right
                         QST_functions.Burn_right(requiredtemperatures, [stim_dur_calibration]*5, [100]*5, [100]*5)
-                core.wait(5.0)
+                core.wait(3.5) #wait before rating scale appears
                 #check for quit (the Esc key)
                 if event.getKeys(keyList=["escape"]):
                     quitRoutine()
@@ -672,7 +697,7 @@ if paincalibrationYN == 'Ja':
                     
                     if keypress:
                         if parallel_port_mode == True:
-                            print(keypress)
+                            #print(keypress)
                             # move left
                             if keypress[0] == 0:
                                 currentPos = currentPos - 1
@@ -686,7 +711,7 @@ if paincalibrationYN == 'Ja':
                             else:
                                 print('Do you use the correct button box / keys?')
                         else:
-                            print(keypress)
+                            #print(keypress)
                             # move left
                             if keypress[0] == 'left':
                                 currentPos = currentPos - 1
@@ -700,7 +725,7 @@ if paincalibrationYN == 'Ja':
                             elif keypress[0] == 'r':
                                 redo = True
                                 print("Redo = True")
-                                print(redo)
+                                #print(redo)
                             else:
                                 print('Do you use the correct button box / keys?')
                         
@@ -1229,7 +1254,9 @@ myFunctions.showText(win, "Waiting for experimenter", (1, 1, 1))
 win.flip()
 winexp.flip()
 writerlog.writerow(["Waiting for Experimenter", core.getTime()])
-keypress = event.waitKeys(float('inf'),keyList=['space']) #wait for space
+keypress = event.waitKeys(float('inf'),keyList=['space', 'escape']) #wait for space
+if keypress[0] == "escape":
+    QuitExperiment()
 t0 = core.getTime()
 writerlog.writerow(["Start of Experiment // Spacebar pressed", "Absolute Time", "Time since t0 [t0 = start of expt]"])
 writerlog.writerow(["Start of Experiment // Spacebar pressed", core.getTime(), core.getTime()-t0])
@@ -1333,13 +1360,14 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
         
     
     ## Present fix for 0.5s
-    print("Trial {}".format(trial))
+    print("Trial {}".format(trial+1))
     print("Stimulus " + stimulus[1])
     
     # present text to the experimenter
     currtrialstring = str("Pain Type: " + str(myPainType) + "\nPain Location: " + str(myPainLocation) + "\nControl: " +
                        str(myPainControlIntensity) + "\nComparison: " + str(myPainIntensity))
-    if (trial+1) % 25 == 0: #on every 25 trials
+    if (trial) % 25 == 0: #on every 25 trials. Trial 25 is coded 24 in python, and we need to give break AFTER 25th
+        #so at the start of trial 26 which is trial 25 in python
         myFunctions.showText(winexp, "Give Break + Press Space ", (1, -1, -1))
     else:
         myFunctions.showText(winexp, "Press Space ", (-1, -1, -1))
@@ -1359,9 +1387,11 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     
     
     winexp.flip()
-    keypress = event.waitKeys(float('inf'),keyList=['space']) #wait for space
+    keypress = event.waitKeys(float('inf'),keyList=['space', 'escape']) #wait for space
     # Wait for space again once the experimenter knows which stimulation to prepare
     # important to prepare because pinpricks are not automatically administered
+    if keypress[0] == "escape":
+        QuitExperiment()
     
     #show fix
     myFunctions.showFix(win, "+", (1, 1, 1))
@@ -1380,15 +1410,20 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     print(("After 500ms wait  ", core.getTime() - getready))
     writerlog.writerow(["After 500ms wait", core.getTime(), core.getTime()-t0, core.getTime()-getready])
     
+    stimonsetTimer = core.CountdownTimer(delay_before_stim_main_experiment + random.uniform(0,2)) #delay as defined above plus jitter
     stimonsetTimer.reset()
-    
+    delay_stimonset_curr_trial = stimonsetTimer.getTime() #record how much the delay was in each trial, you never know if it will be needed in the analysis XD
+    print(delay_stimonset_curr_trial)
+    myFunctions.showFix(winexp, "Wait", (1, 1, 1))
     #print(stimonsetTimer.getTime())
     
     # make a countdown for the experimenter
     while stimonsetTimer.getTime() > 0:
-        
-        if stimonsetTimer.getTime() > 4:
+        if  stimonsetTimer.getTime() > 5.0:
+            myFunctions.showFix(winexp, "Wait", (1, 1, 1))
+        elif stimonsetTimer.getTime() > 4.0: # between 4 and 5, don't want to start counting down too early
             myFunctions.showFix(winexp, "5", (1, 1, 1))
+            #print("between 4 and 5  " + str(stimonsetTimer.getTime()))
             if timestampprinted_5 == False:  # if not False
                     #print(("After 5s countdown  ", core.getTime() - getready))
                     writerlog.writerow(["Countdown 5s", core.getTime(), core.getTime()-t0, core.getTime()-getready])
@@ -1398,6 +1433,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             #print(stimonsetTimer.getTime())
         elif stimonsetTimer.getTime() > 3:
             myFunctions.showFix(winexp, "4", (1, 1, 1))
+            #print("> 3 " + str(stimonsetTimer.getTime()))
             if timestampprinted_4 == False:  # if not False
                     #print(("After 4s countdown  ", core.getTime() - getready))
                     writerlog.writerow(["Countdown 4s", core.getTime(), core.getTime()-t0, core.getTime()-getready])
@@ -1407,6 +1443,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             #print(stimonsetTimer.getTime())
         elif stimonsetTimer.getTime() > 2:
             myFunctions.showFix(winexp, "3", (1, 1, 1))
+            #print("> 2 " + str(stimonsetTimer.getTime()))
             if timestampprinted_3 == False:  # if not False
                     #print(("After 3s countdown  ", core.getTime() - getready))
                     writerlog.writerow(["Countdown 3s", core.getTime(), core.getTime()-t0, core.getTime()-getready])
@@ -1582,7 +1619,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     ## Record response 
     ############################
     #core.wait(1.0)
-    myFunctions.showText(win, 'welcher Reiz ist schmerzhafter?', (1, 1, 1))
+    myFunctions.showText(win, 'Welcher Reiz ist schmerzhafter?', (1, 1, 1))
     win.flip()
     RTstart = clock.getTime()
     print(("Response onset ", RTstart - getready))
@@ -1672,7 +1709,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             response = 'NaN'
    # writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity", "Comparison Intensity", "Position of Control", "Sub Resp Raw" "Sub Resp Comparison More Pain", "RT"]) # data file column headers
     print("Write to file trial {}".format(trial+1))
-    writer.writerow([trial+1, stimulus[1], stimulus[2], myPainControlIntensity, myPainIntensity, stimulus[4], keypress[0], response, RT[trial]]) # data file column headers
+    writer.writerow([trial+1, stimulus[1], stimulus[2], myPainControlIntensity, myPainIntensity, stimulus[4], keypress[0], response, RT[trial], delay_stimonset_curr_trial]) # data file column headers
     
     
     
