@@ -146,17 +146,20 @@ def SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenames
         temp_30 = (30-b)/m
         temp_75 = (75-b)/m
         temp_50 = (50-b)/m
+        temp_80 = (80-b)/m
         print(temp_30)
         print(temp_75)
         print(temp_50)
+        print(temp_80)
         
         # add temp_30, 50 and 75 to file
         writercalib.writerow(["Temp 30", temp_30]) 
         writercalib.writerow(["Temp 50", temp_50]) 
         writercalib.writerow(["Temp 75", temp_75]) 
+        writercalib.writerow(["Temp 80", temp_80]) 
         
         # generate a range of temperatures to use in main expt
-        temperatures_calibrated = numpy.linspace(temp_50, temp_75, 5) # we want 5 numbers for the psychometric function
+        temperatures_calibrated = numpy.linspace(temp_50, temp_80, 5) # we want 5 numbers for the psychometric function
         writercalib.writerow(["Stim 1", temperatures_calibrated[0]]) 
         writercalib.writerow(["Stim 2", temperatures_calibrated[1]]) 
         writercalib.writerow(["Stim 3", temperatures_calibrated[2]]) 
@@ -168,18 +171,18 @@ def SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenames
         plt.figure()
         plt.xlabel('temperature')
         plt.ylabel('ratings')
-        plt.title((temp_30, temp_75))
-        plt.plot(x, y, 'yo', x, m*x+b, '--b',temp_30,30,'bo',temp_75,75,'bo') 
+        plt.title((temp_30, temp_80))
+        plt.plot(x, y, 'yo', x, m*x+b, '--b',temp_30,30,'bo',temp_80,80,'bo') 
         plt.axis([41.5, 58.0, 0, 100])
 
         plt.savefig(filenamesaveplot+'.png',dpi=80,transparent=True)
         
         
         
-        return temperatures_calibrated, temp_30, temp_50, temp_75
+        return temperatures_calibrated, temp_30, temp_50, temp_75, temp_80
     
     
 def RecordTemperature():
-         left_curr_temps = thermode_left.get_temperatures()
-         right_curr_temps = thermode_right.get_temperatures()
-         return left_curr_temps, right_curr_temps
+         [left_curr_temps, datatempleft] = thermode_left.get_temperatures()
+         [right_curr_temps, datatempright] = thermode_right.get_temperatures()
+         return left_curr_temps, right_curr_temps, datatempleft, datatempright

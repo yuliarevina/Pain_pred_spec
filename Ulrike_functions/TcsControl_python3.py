@@ -194,18 +194,30 @@ class TcsDevice:
         self.s_port.flushOutput()
         # '/r' + 'xxx?xxx?xxx?xxx?xxx?xxx' with '?' = sign '+' ou '-'
         # neutral + t1 to t5
-        data = self.s_port.read(24)
+        datatemps = self.s_port.read(24)
+        #print("Raw Datatemps")
+        #print(type(datatemps))
+        #print(len(datatemps))
+        #print(datatemps)
+        #print(datatemps[0:1])
+        #print(datatemps[2:4])
+        #print(datatemps[5:8])
+        #print(datatemps[9:12])
+        #print(datatemps[13:16])
+        #print(datatemps[17:20])
+        #print(datatemps[21:24])
+        #print("End")
         temperatures = [0, 0, 0, 0, 0]
-        if len(data) > 23:
-            neutral = float(data[2:4]);
-            temperatures[0] = float(data[5:8]) / 10;
-            temperatures[1] = float(data[9:12]) / 10;
-            temperatures[2] = float(data[13:16]) / 10;
-            temperatures[3] = float(data[17:20]) / 10;
-            temperatures[4] = float(data[21:24]) / 10;
+        if len(datatemps) > 23:
+            neutral = float(datatemps[2:4]);
+            temperatures[0] = float(datatemps[5:8]) / 10;
+            temperatures[1] = float(datatemps[9:12]) / 10;
+            temperatures[2] = float(datatemps[13:16]) / 10;
+            temperatures[3] = float(datatemps[17:20]) / 10;
+            temperatures[4] = float(datatemps[21:24]) / 10;
         else:
             temperatures = []
-        return temperatures
+        return temperatures, datatemps
     
     
     def enable_point_to_point(self, enabled_zones):
