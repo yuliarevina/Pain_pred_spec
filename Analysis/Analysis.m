@@ -11,6 +11,10 @@
 ntrialseachcond = 27*2;
 sessiontype = 2; % 1 type, 2 location
 
+
+
+
+
 nlevels = 5;
 % extract data
 
@@ -100,6 +104,10 @@ for condition = 1:2; %conditions
             data.ComparisonIntensity == comparison_intensity_thermal(intensity)  & ...
             data.SubRespComparisonMorePain == 1    ); % find condition 1, 4 or 5 where comparison intensity is the required one
             % and the response was 1, meaning comparison more pain
+            
+           
+            
+            
             
             % Count the total N of trials of this type
             tmptotal = find( ... 
@@ -195,7 +203,8 @@ markershape(5) = 'x';
 % palamedes analysis
 
 % Comnine condition 1 and 2, or analyse separately?
-combineconds = true;
+  combineconds = false;
+
 if combineconds
     condition_for_loop = 1;
     resultsanalysis = results(:,:,1) + results(:,:,2)
@@ -243,7 +252,8 @@ for condition = condition_for_loop %conditions
     %Parameter grid defining parameter space through which to perform a
     %brute-force search for values to be used as initial guesses in iterative
     %parameter search.
-    searchGrid.alpha = 45:.01:53; %PSE
+    %searchGrid.alpha = 45:.01:53; %PSE
+    searchGrid.alpha = 1:.01:5; %PSE for combined across subs where temp is coded 1 to 5
     searchGrid.beta = logspace(0,1,101); %slope
     searchGrid.gamma = 0.02;  %scalar here (since fixed) but may be vector %guess rate (lower asymptote)
     searchGrid.lambda = 0.02;  %ditto % lapse rate, finger error, upper asympt
@@ -312,6 +322,7 @@ end
 ntrialseachcond = 12*1;
 % extract data
 
+nCond = 2;
 
 % Trial types
 
@@ -333,7 +344,13 @@ whichPainType = 2; % 1 thermal/left or 2 mechano/right
 
 
 % Comnine condition 1 and 2, or analyse separately?
-combineconds = false;
+combineconds = true;
+
+
+% Keep the N trials of High and Low the same or not?
+% if true then a random sample will be taken from the High trials of the
+% same number as the number of low trials
+equalizeNtrials = true;
 
 
 conditionorderthermal = [1, 4, 5];
@@ -352,8 +369,8 @@ comparison_intensity_mechano =  [32, 64, 128, 256, 512]
 
 %conditions = nan(5,ntrialseachcond,5);
 tmp = [];
-results = nan(nlevels,1,3);
-for condition = 1:3; %conditions of expectation
+results = nan(nlevels,1,nCond);
+for condition = 1:nCond %conditions of expectation
 %     conditions(:,i) = find(subjectdata(:,1) == i); %find all intact trials, all BS trials...
 %     tmp(:,i) = find(subjectdata(:,1) == i);
     for intensity = 1:nlevels %intensity
@@ -371,11 +388,46 @@ for condition = 1:3; %conditions of expectation
             data.SubRespComparisonMorePain == 1    ); % find condition 1, 4 or 5 where comparison intensity is the required one
             % and the response was 1, meaning comparison more pain
             
+            
+            if condition == 1
+                tmpresHIGH = tmpresp;
+            end
+            
+            
             % Count the total N of this trial type
             tmptotal = find( ... 
                  (data.TrialTypeID == conditionorderthermal(condition)) & ...
             data.ComparisonIntensity == comparison_intensity_thermal(intensity)); % find condition 1, 4 or 5 where comparison intensity is the required one
             % and the response was 1, meaning comparison more pain
+            
+            
+            if equalizeNtrials && condition == 2 % once we have processed low conditions and know
+                %their total number, we need to resample the high ones
+                
+                % find all the high trials, regardless of response
+                tmpHIGHtotal = find( ... 
+                (data.TrialTypeID == conditionorderthermal(1)) & ...
+                data.ComparisonIntensity == comparison_intensity_thermal(intensity)) % find condition 1, 4 or 5 where comparison intensity is the required one
+               
+                % take a randomsample of them with the size of the Low condition               
+                samplevector = randsample(size(tmpHIGHtotal, 1), size(tmptotal, 1))
+                
+                tmpHIGHtotal(samplevector)
+                
+                % look again at the high trials where they answered
+                % comparison more pain, but only in the subset defined by
+                % our sample vector
+                tmpresHIGHnew = find( ... 
+                (data(tmpHIGHtotal(samplevector), :).TrialTypeID == conditionorderthermal(1)) & ...
+                data(tmpHIGHtotal(samplevector), :).ComparisonIntensity == comparison_intensity_thermal(intensity)  & ...
+                data(tmpHIGHtotal(samplevector), :).SubRespComparisonMorePain == 1    ) % find condition 1, 4 or 5 where comparison intensity is the required one
+                % and the response was 1, meaning comparison more pain
+            
+            end
+            
+            
+            
+            
         else % mechano / right
             if sessiontype == 1 %pain type session, need mechano intensities
             
@@ -403,6 +455,35 @@ for condition = 1:3; %conditions of expectation
                  (data.TrialTypeID == conditionordermechano(condition)) & ...
                  data.ComparisonIntensity == comparison_intensity_thermal(intensity) ); % find condition 2, 3 or 6 where comparison intensity is the required one
                 % and the response was 1, meaning comparison more pain
+                
+                
+                if equalizeNtrials && condition == 2 % once we have processed low conditions and know
+                    %their total number, we need to resample the high ones
+                    
+                    % find all the high trials, regardless of response
+                    tmpHIGHtotal = find( ...
+                        (data.TrialTypeID == conditionordermechano(1)) & ...
+                        data.ComparisonIntensity == comparison_intensity_thermal(intensity)) % find condition 1, 4 or 5 where comparison intensity is the required one
+                    
+                    % take a randomsample of them with the size of the Low condition
+                    samplevector = randsample(size(tmpHIGHtotal, 1), size(tmptotal, 1))
+                    
+                    tmpHIGHtotal(samplevector)
+                    
+                    % look again at the high trials where they answered
+                    % comparison more pain, but only in the subset defined by
+                    % our sample vector
+                    tmpresHIGHnew = find( ...
+                        (data(tmpHIGHtotal(samplevector), :).TrialTypeID == conditionordermechano(1)) & ...
+                        data(tmpHIGHtotal(samplevector), :).ComparisonIntensity == comparison_intensity_thermal(intensity)  & ...
+                        data(tmpHIGHtotal(samplevector), :).SubRespComparisonMorePain == 1    ) % find condition 1, 4 or 5 where comparison intensity is the required one
+                    % and the response was 1, meaning comparison more pain
+            
+                 end
+                
+                
+                
+                
             end
                 
         end
@@ -415,9 +496,17 @@ for condition = 1:3; %conditions of expectation
         if whichPainType == 1 %thermal/left
             results_thermal_left(intensity,1,condition) = size(tmpresp,1);
             results_thermal_left(intensity,2,condition) = size(tmptotal,1);
+            if equalizeNtrials && condition == 2
+                results_thermal_left(intensity,1,1) = size(tmpresHIGHnew,1);
+                results_thermal_left(intensity,2,1) = size(tmptotal,1);
+            end
         elseif whichPainType == 2 %mechano/right
             results_mechano_right(intensity,1,condition) = size(tmpresp,1);
             results_mechano_right(intensity,2,condition) = size(tmptotal,1);
+            if equalizeNtrials && condition == 2
+                results_mechano_right(intensity,1,1) = size(tmpresHIGHnew,1);
+                results_mechano_right(intensity,2,1) = size(tmptotal,1);
+            end
         end
     end
 end
@@ -439,14 +528,14 @@ end
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %      For thermal and mechano by expectation %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ntrialseachcond = max(reshape(results, 30, 1, 1)); % just take the max n of trials for any condition, we simply
+ntrialseachcond = max(reshape(results, 20, 1, 1)); % just take the max n of trials for any condition, we simply
 % need a rough number for graph axes here
 
 % figure
 figure; plot(1:nlevels, results(1:nlevels,1,1), 'ro-') %Thermal
 hold on;
 plot(1:nlevels, results(1:nlevels,1,2), 'bs-') % Mechano
-plot(1:nlevels, results(1:nlevels,1,3), 'go-') %occl
+%plot(1:nlevels, results(1:nlevels,1,3), 'go-') %occl
 %plot(1:5, results(1:5,1,4), 'kx-') %del sharp
 %plot(1:5, results(1:5,1,5), 'cx-') %del fuzzy
 axis([0.5 nlevels+0.5 -0.5 ntrialseachcond+0.5])
@@ -484,7 +573,7 @@ figure('name','Maximum Likelihood Psychometric Function Fitting');
     axes
     hold on
 
-for condition = 1:3 %conditions
+for condition = 1:2 %conditions
     
     
     switch condition
@@ -520,6 +609,7 @@ for condition = 1:3 %conditions
     %brute-force search for values to be used as initial guesses in iterative
     %parameter search.
     searchGrid.alpha = 45:.01:53; %PSE
+    %searchGrid.alpha = 1:.01:5; %PSE for combined across subs where temp is coded 1 to 5
     searchGrid.beta = logspace(0,1,101); %slope
     searchGrid.gamma = 0.02;  %scalar here (since fixed) but may be vector %guess rate (lower asymptote)
     searchGrid.lambda = 0.02;  %ditto % lapse rate, finger error, upper asympt
@@ -566,3 +656,58 @@ axis([min(StimLevels-0.05) max(StimLevels+0.05) 0 1]);
 plot([0 5],[0.5 0.5])
 plot([0.3 0.3], [0 1], 'LineStyle', '--')
 [leg] = legend('High', '', 'Low', '', 'None', 'Location', 'Northwest');
+
+%% Combine data from several subjects
+
+if not(exist('data_everyone', 'var'))
+    data_everyone = [];
+end
+
+%extract temperature levels of the current dataset
+levels = sort(unique(data_all.ComparisonIntensity))
+
+datatmp = data_all;
+for i = 1:5
+    tmp = find(data_all.ComparisonIntensity == levels(i));
+    datatmp.ComparisonIntensity(tmp, :) = i;
+end
+data_everyone = [data_everyone; datatmp];
+size(data_everyone)
+
+
+
+%% RT analysis for Left/Right expectation
+
+conditionorderthermal = [1, 4, 5];
+conditionordermechano = [3, 2, 6];
+
+
+for condition = 1:2 %conditions of expectation
+    % left
+    tmpRT = find( (data.TrialTypeID == conditionorderthermal(condition)));
+    
+    if condition == 1
+        RTleftHIGH = data.RTs(tmpRT,:);
+    elseif condition == 2
+        RTleftLOW = data.RTs(tmpRT,:);
+    end
+    
+    % right
+    tmpRT = find( (data.TrialTypeID == conditionordermechano(condition)));
+    
+    if condition == 1
+        RTrightHIGH = data.RTs(tmpRT,:);
+    elseif condition == 2
+        RTrightLOW = data.RTs(tmpRT,:);
+    end
+   
+    
+    
+end
+RTsHIGH = [RTleftHIGH; RTrightHIGH];
+RTsLOW = [RTleftLOW; RTrightLOW];
+
+median(RTsHIGH)
+median(RTsLOW)
+mean(RTsHIGH)
+mean(RTsLOW)
