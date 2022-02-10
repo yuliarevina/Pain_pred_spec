@@ -32,12 +32,17 @@ class ButtonBox:
 
     def __init__(self, port=0, clock=None):
         # initialize the button box object with a specific parallel port (default first one)
-        self.p_port = parallel.Parallel(port = port)
-        # The 'out' parameter indicates the desired port direction.  If
-        #'out' is true or non-zero, the drivers are turned on (forward
-        #direction, for writing); otherwise, the drivers are turned off (reverse
-        #direction, so that the peripheral drives the signal).
-        self.p_port.PPDATADIR(0)
+        if isinstance(port, int):
+            self.p_port = parallel.Parallel(port = port)
+            # The 'out' parameter indicates the desired port direction.  If
+            #'out' is true or non-zero, the drivers are turned on (forward
+            #direction, for writing); otherwise, the drivers are turned off (reverse
+            #direction, so that the peripheral drives the signal).
+            self.p_port.PPDATADIR(0)
+        elif hasattr(port, 'PPDATADIR'):
+            self.p_port = port
+        else:
+            raise ValueError('You did not enter a valid port object or number!')
         # define a clock that will be linked to the device so that presses can be time stamped
         # you can take your own clock or the one that has been started when initializing the object
         self.timeStamped = True
@@ -162,7 +167,7 @@ class ButtonBox:
         if timeStamped == False:
             return keysToReturn
         else:
-            tuples = zip(keysToReturn,timesToReturn)
+            tuples = list(zip(keysToReturn,timesToReturn))
             return tuples
     
     

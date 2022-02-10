@@ -48,11 +48,8 @@ class EyeLinkCoreGraphicsPsychoPy(pylink.EyeLinkCustomDisplay):
         win: the Psychopy display we plan to use for stimulus presentation  '''
         
         pylink.EyeLinkCustomDisplay.__init__(self)
-        if hasattr(pylink.__version__, 'split'):
-            self.pylinkVer = pylink.__version__
-        else:
-            self.pylinkVer = pylink.__version__.__version__
-        # self.pylinkVer = pylink.__version__
+                
+        self.pylinkVer = pylink.__version__
         self.display = win
         self.w, self.h = win.size
         
@@ -67,9 +64,9 @@ class EyeLinkCoreGraphicsPsychoPy(pylink.EyeLinkCustomDisplay):
         if self.units != 'pix': self.display.setUnits('pix')
         
         # Simple warning beeps
-        self.__target_beep__ = sound.Sound('A', octave=4, secs=0.1)
-        self.__target_beep__done__ = sound.Sound('E', octave=4, secs=0.1)
-        self.__target_beep__error__ = sound.Sound('E', octave=6, secs=0.1)
+        # self.__target_beep__ = sound.Sound('A', octave=4, secs=0.1)
+        # self.__target_beep__done__ = sound.Sound('E', octave=4, secs=0.1)
+        # self.__target_beep__error__ = sound.Sound('E', octave=6, secs=0.1)
         
         self.imgBuffInitType = 'I'
         self.imagebuffer = array.array(self.imgBuffInitType)
@@ -88,7 +85,7 @@ class EyeLinkCoreGraphicsPsychoPy(pylink.EyeLinkCustomDisplay):
         self.msgHeight = self.size[1]/20.0
         self.title = visual.TextStim(self.display,'', height=self.msgHeight, color=[1,1,1],
                                      pos = (0,-self.size[1]/2-self.msgHeight), wrapWidth=self.w, units='pix')
-        self.calibInst = visual.TextStim(self.display, anchorHoriz='left', anchorVert ='top', height=self.msgHeight, color=[1,1,1],
+        self.calibInst = visual.TextStim(self.display, alignHoriz='left',alignVert ='top', height=self.msgHeight, color=[1,1,1],
                                         pos = (-self.w/2.0, self.h/2.0), units='pix',
                                         text = '''
         Enter: Show/Hide camera image
@@ -170,12 +167,12 @@ class EyeLinkCoreGraphicsPsychoPy(pylink.EyeLinkCustomDisplay):
     def play_beep(self, beepid):
         ''' Play a sound during calibration/drift correct.'''
 
-        if beepid == pylink.CAL_TARG_BEEP or beepid == pylink.DC_TARG_BEEP:
-            self.__target_beep__.play()
-        if beepid == pylink.CAL_ERR_BEEP or beepid == pylink.DC_ERR_BEEP:
-            self.__target_beep__error__.play()
-        if beepid in [pylink.CAL_GOOD_BEEP, pylink.DC_GOOD_BEEP]:
-            self.__target_beep__done__.play()
+    #    if beepid == pylink.CAL_TARG_BEEP or beepid == pylink.DC_TARG_BEEP:
+    #        self.__target_beep__.play()
+    #    if beepid == pylink.CAL_ERR_BEEP or beepid == pylink.DC_ERR_BEEP:
+    #        self.__target_beep__error__.play()
+    #    if beepid in [pylink.CAL_GOOD_BEEP, pylink.DC_GOOD_BEEP]:
+    #        self.__target_beep__done__.play()
 
     def getColorFromIndex(self, colorindex):
          '''Return psychopy colors for elements in the camera image'''
