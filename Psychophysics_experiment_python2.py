@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from psychopy import core, clock, data, visual, event, gui, monitors, logging #parallel
@@ -77,10 +77,8 @@ if brainAmp:
         
 if parallel_port_mode:
     # initialize button boxes on port 0
-    timerRating=core.Clock()
-    p_in = parallel.Parallel(0)
-    p_in.setDataDir(0)
-    bbox = bb.ButtonBox(port = p_in, clock = timerRating)
+    timerRating=core.Clock() 
+    bbox = bb.ButtonBox(port = 0, clock = timerRating)
             
     
 # *******************************************************
@@ -174,13 +172,8 @@ thisblock = ok_data[6]
 #temperatures_debug = [49.8, 50.5, 51.2, 51.9, 52.6] # calibrate to the person's own thresholds?
 #temperatures_debug = [48.4, 49.1, 49.8, 50.5, 51.2] # calibrate to the person's own thresholds?
 #temperatures_debug = [48.7, 49.7, 50.7, 51.6, 52.6] # calibrate to the person's own thresholds?
-#temperatures_debug = [50.7, 51.9, 53.2, 54.4, 55.6] # Pilot Sub 01
-#temperatures_debug = [49.6, 50.6, 51.6, 52.5, 53.5] # Pilot Sub 02
-#temperatures_debug = [50.1, 51.1, 52.1, 53.0, 54.0] # Pilot Sub 03
-#temperatures_debug = [45.5, 47.7, 49.9, 52.1, 54.3] # Pilot Sub 04
-#temperatures_debug = [50.3, 51.1, 52.0, 52.9, 53.8] # Pilot Sub 05
-#temperatures_debug = [50.9, 52.0, 53.0, 54.1, 55.1] # Pilot Sub 06
-temperatures_debug = [48.5, 49.7, 50.9, 52.1, 53.3] # Pilot Sub 07
+temperatures_debug = [50.7, 51.9, 53.2, 54.4, 55.6] # Pilot Sub 01
+
 
 # routine to quit the experiment e.g. at the end or when escape is pressed
 def QuitExperiment():
@@ -193,8 +186,6 @@ def QuitExperiment():
     
     ## Closing Section
     datafilewrite.close()
-    if cueorderinwords: #if variable exists
-        writerlog.writerow(["Cue order: ", cueorderinwords]) 
     logfilewrite.close()
     
     
@@ -218,13 +209,7 @@ def QuitExperiment():
         
     win.close()
     winexp.close()    
-    
-    if parallel_port_mode:
-        p_in.PPRELEASE()
-    
-    if brainAmp:
-        p_out.PPRELEASE()
-
+       
     core.quit()
 
 def RecordAnswer():
@@ -290,7 +275,7 @@ def RecordAnswer():
 # **************************************************
 
 ## Data file
-filenamedata="{}data_{}_{}_{}_{}_blk{}_cueorder{}_{}.csv".format(directory, sub, sex, age, sessiontype, thisblock, cueorder, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filenamedata="{}data_{}_{}_{}_{}_{}_{}.csv".format(directory, sub, sex, age, sessiontype, thisblock, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
 if thisOS == "Linux":
     datafilewrite = open(filenamedata, "w")
 else:
@@ -649,7 +634,6 @@ if paincalibrationYN == 'Ja':
             event.waitKeys(keyList=["space"])
             textObjExp.setText("")
             textObjExp.draw()
-            win.flip()
             winexp.flip()
             
             rating = []
@@ -684,26 +668,15 @@ if paincalibrationYN == 'Ja':
 #                50.5, 50.5,
 #                51.0, 51.0]
             
-#            temperatures_calibration_real = [ # not including half degree increments
-#                42.0, 42.0, 43.0,
-#                43.0, 44.0, 44.0,
-#                44.0, 45.0, 45.0,
-#                45.0, 46.0, 46.0,
-#                46.0, 47.0, 47.0,
-#                47.0, 48.0, 48.0,  
-#                49.0, 49.0, 50.0,
-#                50.0, 51.0, 51.0]
-#            
-            #try more trials in painful range
             temperatures_calibration_real = [ # not including half degree increments
-                42.0, 42.5, 43.0,
-                43.5, 44.0, 44.5,
-                45.0, 45.5, 46.0,
-                46.5, 47.0, 47.5,
-                48.0, 48.5, 49.0, 49.0, 49.5,
-                49.5, 50.0, 50.0, 50.5, 50.5,
-                51.0, 51.0, 51.5,
-                51.5, 52.0, 52.0]
+                42.0, 42.0, 43.0,
+                43.0, 44.0, 44.0,
+                44.0, 45.0, 45.0,
+                45.0, 46.0, 46.0,
+                46.0, 47.0, 47.0,
+                47.0, 48.0, 48.0,  
+                49.0, 49.0, 50.0,
+                50.0, 51.0, 51.0]
             
             random.shuffle(temperatures_calibration_real)
             
@@ -757,14 +730,6 @@ if paincalibrationYN == 'Ja':
                     if parallel_port_mode:
                         bbox.reset()
                         keypress = bbox.getButtons(timeStamped=False)
-                        keypresskeyboard = event.getKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
-                        if keypresskeyboard:
-                                if keypresskeyboard[0] == "escape":
-                                    QuitExperiment()
-                                elif keypresskeyboard[0] == "r":
-                                    redo = True
-                                    print("Redo = True")
-                        #print(keypresskeyboard)
                     else:
                         keypress = event.waitKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
                     
@@ -784,7 +749,6 @@ if paincalibrationYN == 'Ja':
                                 pass
                             else:
                                 print('Do you use the correct button box / keys?')
-                            
                         else:
                             #print(keypress)
                             # move left
@@ -905,7 +869,7 @@ if paincalibrationYN == 'Ja':
 mytemperatures = temperatures_debug
 if paincalibrationYN == 'Ja':
     #take the average calibration of L and R
-    temperatures_calibrated = numpy.linspace((temp50_left+temp50_right)/2, (temp75_left+temp75_right)/2, 5) # we want 5 numbers for the psychometric function
+    temperatures_calibrated = numpy.linspace((temp50_left+temp50_right)/2, (temp80_left+temp80_right)/2, 5) # we want 5 numbers for the psychometric function
     print(temperatures_calibrated)
     mytemperatures = numpy.round(temperatures_calibrated, 1) # from calibration, to 1 dec place
 mechanicalinstensities = [32, 64, 128, 256, 512] #check what these should be, also calibrated individually?
@@ -1212,26 +1176,6 @@ writerlog.writerow(["Start of Experiment // Spacebar pressed", core.getTime(), c
 temperatures_in_trial_left = numpy.zeros((400, 5, len(stimuli_list_shuffled)))
 temperatures_in_trial_right = numpy.zeros((400, 5, len(stimuli_list_shuffled)))
 
-if paincalibrationYN == "Nein":
-    # show some example stimuli so the first trial doesn't come as a shock
-    # when we have calibration at the start they are used to the heat, but in other blocks no
-    myFunctions.showText(win, "Beispielreiz", (1, 1, 1))
-    myFunctions.showText(winexp, "Beispielreiz", (1, 1, 1))
-    win.flip()
-    winexp.flip()
-
-    if thermode:
-            QST_functions.Burn_left([45, 45, 31, 45, 45], [1]*5, [100]*5, [100]*5)
-            core.wait(3.0)
-            QST_functions.Burn_right([45, 45, 31, 45, 45], [1]*5, [100]*5, [100]*5)
-            core.wait(3.0)
-            QST_functions.Burn_left([46, 46, 31, 46, 46], [1]*5, [100]*5, [100]*5)
-            core.wait(3.0)
-            QST_functions.Burn_right([46, 46, 31, 46, 46], [1]*5, [100]*5, [100]*5)
-            core.wait(3.0)
-
-
-
 
 #for each trial
 for trial, stimulus in enumerate(stimuli_list_shuffled):
@@ -1333,9 +1277,8 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     # present text to the experimenter
     currtrialstring = str("Pain Type: " + str(myPainType) + "\nPain Location: " + str(myPainLocation) + "\nControl: " +
                        str(myPainControlIntensity) + "\nComparison: " + str(myPainIntensity))
-    if (trial) % 30 == 0: #on every 25 trials. Trial 25 is coded 24 in python, and we need to give break AFTER 25th
+    if (trial) % 25 == 0: #on every 25 trials. Trial 25 is coded 24 in python, and we need to give break AFTER 25th
         #so at the start of trial 26 which is trial 25 in python
-        #changed to 30
         myFunctions.showText(winexp, "Give Break + Press Space ", (1, -1, -1))
         myFunctions.showText(win, u"Pause. Drück eine beliebige Taste um weiterzumachen ", (1, -1, -1))
     else:
@@ -1367,7 +1310,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
         print("keypress before bbox reset")
         print(keypress_bbox)
         bbox.reset()
-        core.wait(0.3)
+        core.wait(0.1)
         print("bbox reset")
         print(keypress_bbox)
     
@@ -1662,8 +1605,6 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             currtime = time.time()
             #print(left_curr_temps)
             #print(datatempleft)
-            #print(datatempright)
-            #print("")
         print(currtime)
         print(currtime-start_time)
         print("Temperature rec finished, elapsed time: " + str(currtime - start_time))
