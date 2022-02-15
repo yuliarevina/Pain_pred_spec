@@ -209,7 +209,7 @@ class TcsDevice:
         #print("End")
         temperatures = [0, 0, 0, 0, 0]
         if len(datatemps) > 23:
-            neutral = float(datatemps[2:4]);
+            #neutral = float(datatemps[2:4]);
             temperatures[0] = float(datatemps[5:8]) / 10;
             temperatures[1] = float(datatemps[9:12]) / 10;
             temperatures[2] = float(datatemps[13:16]) / 10;

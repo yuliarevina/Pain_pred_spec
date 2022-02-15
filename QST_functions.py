@@ -8,7 +8,7 @@ Created on Thu Jun 17 18:19:32 2021
 
 from psychopy import core, clock, visual, event, monitors
 import pandas as pd
-import time, numpy
+import time, numpy, os, sys
 import matplotlib.pyplot as plt # for plotting the results
 #import QSTControl_python3 as QC
 import TcsControl_python3 as QST
@@ -36,6 +36,7 @@ def Burn_left(temps, durs, rampspeeds, returnspeeds):
     return_speed = returnspeeds # ramp down speed in °C/s for the 5 zones
     temperatures = temps # target temperatures in °C for the 5 zones
    
+    
 
     # Quiet mode
     thermode_left.set_quiet()
@@ -46,6 +47,8 @@ def Burn_left(temps, durs, rampspeeds, returnspeeds):
     thermode_left.set_ramp_speed(ramp_speed)
     thermode_left.set_return_speed(return_speed)
     thermode_left.set_temperatures(temperatures)
+    
+    thermode_left.set_filter("low")
     
     # start stimulation
     thermode_left.stimulate()   
@@ -120,6 +123,8 @@ def Burn_right(temps, durs, rampspeeds, returnspeeds):
     thermode_right.set_return_speed(return_speed)
     thermode_right.set_temperatures(temperatures)
     
+    thermode_right.set_filter("low")
+    
     # start stimulation
     thermode_right.stimulate()       
 
@@ -159,7 +164,7 @@ def SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenames
         writercalib.writerow(["Temp 80", temp_80]) 
         
         # generate a range of temperatures to use in main expt
-        temperatures_calibrated = numpy.linspace(temp_50, temp_80, 5) # we want 5 numbers for the psychometric function
+        temperatures_calibrated = numpy.linspace(temp_50, temp_75, 5) # we want 5 numbers for the psychometric function
         writercalib.writerow(["Stim 1", temperatures_calibrated[0]]) 
         writercalib.writerow(["Stim 2", temperatures_calibrated[1]]) 
         writercalib.writerow(["Stim 3", temperatures_calibrated[2]]) 
@@ -171,8 +176,8 @@ def SaveCalibrationTemp(temperatures_calibration, rating, writercalib, filenames
         plt.figure()
         plt.xlabel('temperature')
         plt.ylabel('ratings')
-        plt.title((temp_30, temp_80))
-        plt.plot(x, y, 'yo', x, m*x+b, '--b',temp_30,30,'bo',temp_80,80,'bo') 
+        plt.title((temp_30, temp_75))
+        plt.plot(x, y, 'yo', x, m*x+b, '--b',temp_30,30,'bo',temp_75,75,'bo') 
         plt.axis([41.5, 58.0, 0, 100])
 
         plt.savefig(filenamesaveplot+'.png',dpi=80,transparent=True)
@@ -186,3 +191,4 @@ def RecordTemperature():
          [left_curr_temps, datatempleft] = thermode_left.get_temperatures()
          [right_curr_temps, datatempright] = thermode_right.get_temperatures()
          return left_curr_temps, right_curr_temps, datatempleft, datatempright
+     
