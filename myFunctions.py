@@ -64,7 +64,7 @@ def PracticeSession(thermodeYN, win, winexp, arm, side, parallel_port_mode, bbox
     winexp.flip()
     submittedanswer = False
     while not submittedanswer:
-        [submittedanswer, keypress] = RecordAnswer(parallel_port_mode, bbox)
+        [submittedanswer, keypress, keypresskeyboard] = RecordAnswer(parallel_port_mode, bbox)
     if (side[0] == 0 and keypress[0] == "left") or (side[0] == 1 and keypress[0] == "right"):
         #correct
         showText(win, "Richtig! :)", (1, 1, 1))
@@ -85,8 +85,11 @@ def RecordAnswer(parallel_port_mode, bbox):
     #keypress = []
     
     if parallel_port_mode:
-        bbox.reset()
+#        bbox.reset()
+#        core.wait(0.3)
         keypress = bbox.getButtons(timeStamped=False)
+        keypresskeyboard = event.getKeys(keyList=['left', 'right', 'escape', 'return']) #wait for Left Arrow or Right Arrow key
+        
     else:
         keypress = event.getKeys(keyList=['left', 'right', 'escape']) #wait for Left Arrow or Right Arrow key
         #submittedanswer = True
@@ -124,7 +127,7 @@ def RecordAnswer(parallel_port_mode, bbox):
                 pass
             else:
                 print('Do you use the correct button box / keys?')
-    return submittedanswer, keypress            
+    return submittedanswer, keypress , keypresskeyboard           
            
         
         

@@ -37,7 +37,7 @@ else:
 # *********************************************************    
 
 # used computer has a parallel port (for the button boxes)
-parallel_port_mode = False
+parallel_port_mode = True
 
 # eyetracking
 eyetrack_mode = False
@@ -115,6 +115,7 @@ delay_after_stim_main_experiment = 3.0 #how long to wait after stim onset, so if
 delay_before_stim_main_experiment = 8.0 #gives time for experimenter to start the stimulus (for pinpricks it's manually driven)
 #5 s countdown plus around 3 s extra (the exact time will be jittered) because 8s min ISI is good. With the jitter will be between 6 and 10
 stimonsetTimer = core.CountdownTimer(delay_before_stim_main_experiment)  # runs backwards
+responseWindow_calibration = 6.0 #how long to give for response in calibration
 #stimonsetTimer.add(delay_before_stim_main_experiment)
 # how to use
 # while stimonsetTimer.getTime() > 0:
@@ -672,7 +673,8 @@ if paincalibrationYN == 'Ja':
             random.shuffle(temperatures_calibration)
                 
             for i, eachcalibrationtemp in enumerate(temperatures_calibration):
-                tk.sendMessage(str('Calib Trial %d' % (i+1)))  
+                if eyetrack_mode:
+                    tk.sendMessage(str('Calib Trial %d' % (i+1)))  
                 print(redo)
                 print (i)
                 # (stimulate only 2 pads at a time, so 1+2 then 4+5 then 1+2 and so on, to prevent sensitization etc)
@@ -703,79 +705,164 @@ if paincalibrationYN == 'Ja':
                 currentPos = 50
                 textObjSub.setText(u"Bitte bewerten Sie\ndie Intensität\ndieses Reizes\n")
                 
-                while not submittedanswer:
-                    ratingPain.markerPlacedAt = currentPos
-                    ratingPain.draw()
-                    textObjSub.draw()
+                CalibrationRatingTimer = core.CountdownTimer(responseWindow_calibration)
+                CalibrationRatingTimer.reset()
+                
+                # ********************** for when we want to remove self-paced *************
+                while CalibrationRatingTimer.getTime() > 0:
+                    if not submittedanswer:
+                        ratingPain.markerPlacedAt = currentPos
+                        ratingPain.draw()
+                        textObjSub.draw()
                     
-                    ratingPainExp.markerPlacedAt = currentPos
-                    ratingPainExp.draw()
+                        ratingPainExp.markerPlacedAt = currentPos
+                        ratingPainExp.draw()
                     
-                    win.flip()
-                    winexp.flip()
+                        win.flip()
+                        winexp.flip()
                     
-                    if parallel_port_mode:
-                        bbox.reset()
-                        keypress = bbox.getButtons(timeStamped=False)
-                        keypresskeyboard = event.getKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
-                        if keypresskeyboard:
+                        if parallel_port_mode:
+                            bbox.reset()
+                            keypress = bbox.getButtons(timeStamped=False)
+                            keypresskeyboard = event.getKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
+                            if keypresskeyboard:
                                 if keypresskeyboard[0] == "escape":
                                     QuitExperiment()
                                 elif keypresskeyboard[0] == "r":
                                     redo = True
                                     print("Redo = True")
                         #print(keypresskeyboard)
-                    else:
-                        keypress = event.waitKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
-                    
-                    
-                    if keypress:
-                        if parallel_port_mode == True:
-                            #print(keypress)
-                            # move left
-                            if keypress[0] == 0:
-                                currentPos = currentPos - 1
-                            # move right
-                            elif keypress[0] == 1:
-                                currentPos = currentPos + 1
-                            elif keypress[0] == 2:
-                                submittedanswer = True
-                            elif keypress[0] == 3:    
-                                pass
-                            else:
-                                print('Do you use the correct button box / keys?')
-                            
                         else:
-                            #print(keypress)
-                            # move left
-                            if keypress[0] == 'left':
-                                currentPos = currentPos - 1
-                            # move right
-                            elif keypress[0]  == 'right':
-                                currentPos = currentPos + 1
-                            elif keypress[0] == 'escape':
-                                quitRoutine()
-                            elif keypress[0] == 'return':
-                                submittedanswer = True
-                            elif keypress[0] == 'r':
-                                redo = True
-                                print("Redo = True")
-                                #print(redo)
+                            keypress = event.waitKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
+                    
+                    
+                        if keypress:
+                            if parallel_port_mode == True:
+                                #print(keypress)
+                                # move left
+                                if keypress[0] == 0:
+                                    currentPos = currentPos - 1
+                                    # move right
+                                elif keypress[0] == 1:
+                                    currentPos = currentPos + 1
+                                elif keypress[0] == 2:
+                                    currentPos = currentPos - 1
+                                elif keypress[0] == 3:    
+                                    currentPos = currentPos + 1
+                                else:
+                                     print('Do you use the correct button box / keys?')
+                            
                             else:
-                                print('Do you use the correct button box / keys?')
+                                #print(keypress)
+                                # move left
+                                if keypress[0] == 'left':
+                                    currentPos = currentPos - 1
+                                    # move right
+                                elif keypress[0]  == 'right':
+                                    currentPos = currentPos + 1
+                                elif keypress[0] == 'escape':
+                                    quitRoutine()
+                                elif keypress[0] == 'return':
+                                    submittedanswer = True
+                                elif keypress[0] == 'r':
+                                    redo = True
+                                    print("Redo = True")
+                                    #print(redo)
+                                else:
+                                    print('Do you use the correct button box / keys?')
+                
+                            
+                        if currentPos > 100:
+                            currentPos = 100
+                        elif currentPos < 0:
+                            currentPos = 0
                         
-                    if currentPos > 100:
-                        currentPos = 100
-                    elif currentPos < 0:
-                        currentPos = 0
-                    ratingPain.markerPlacedAt = currentPos
-                    ratingPain.draw()
-                    textObjSub.draw()
-                    ratingPainExp.markerPlacedAt = currentPos
-                    ratingPainExp.draw()
-                    win.flip()
-                    winexp.flip()
-                    #core.wait(0.01)        
+                        ratingPain.markerPlacedAt = currentPos
+                        ratingPain.draw()
+                        textObjSub.draw()
+                        ratingPainExp.markerPlacedAt = currentPos
+                        ratingPainExp.draw()
+                        win.flip()
+                        winexp.flip()
+                        #core.wait(0.01)  
+                
+                
+                # ********************* self paced ***************************************
+                        
+#                while not submittedanswer:
+#                    ratingPain.markerPlacedAt = currentPos
+#                    ratingPain.draw()
+#                    textObjSub.draw()
+#                    
+#                    ratingPainExp.markerPlacedAt = currentPos
+#                    ratingPainExp.draw()
+#                    
+#                    win.flip()
+#                    winexp.flip()
+#                    
+#                    if parallel_port_mode:
+#                        bbox.reset()
+#                        keypress = bbox.getButtons(timeStamped=False)
+#                        keypresskeyboard = event.getKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
+#                        if keypresskeyboard:
+#                                if keypresskeyboard[0] == "escape":
+#                                    QuitExperiment()
+#                                elif keypresskeyboard[0] == "r":
+#                                    redo = True
+#                                    print("Redo = True")
+#                        #print(keypresskeyboard)
+#                    else:
+#                        keypress = event.waitKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
+#                    
+#                    
+#                    if keypress:
+#                        if parallel_port_mode == True:
+#                            #print(keypress)
+#                            # move left
+#                            if keypress[0] == 0:
+#                                currentPos = currentPos - 1
+#                            # move right
+#                            elif keypress[0] == 1:
+#                                currentPos = currentPos + 1
+#                            elif keypress[0] == 2:
+#                                submittedanswer = True
+#                            elif keypress[0] == 3:    
+#                                pass
+#                            else:
+#                                print('Do you use the correct button box / keys?')
+#                            
+#                        else:
+#                            #print(keypress)
+#                            # move left
+#                            if keypress[0] == 'left':
+#                                currentPos = currentPos - 1
+#                            # move right
+#                            elif keypress[0]  == 'right':
+#                                currentPos = currentPos + 1
+#                            elif keypress[0] == 'escape':
+#                                quitRoutine()
+#                            elif keypress[0] == 'return':
+#                                submittedanswer = True
+#                            elif keypress[0] == 'r':
+#                                redo = True
+#                                print("Redo = True")
+#                                #print(redo)
+#                            else:
+#                                print('Do you use the correct button box / keys?')
+#                        
+#                    if currentPos > 100:
+#                        currentPos = 100
+#                    elif currentPos < 0:
+#                        currentPos = 0
+#                    ratingPain.markerPlacedAt = currentPos
+#                    ratingPain.draw()
+#                    textObjSub.draw()
+#                    ratingPainExp.markerPlacedAt = currentPos
+#                    ratingPainExp.draw()
+#                    win.flip()
+#                    winexp.flip()
+#                    #core.wait(0.01)    
+              # ***********************************************************************      
                         
                 # record answer
                 rating.append(ratingPain.getRating())
@@ -1380,11 +1467,35 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     if (trial) % 30 == 0: #on every 25 trials. Trial 25 is coded 24 in python, and we need to give break AFTER 25th
         #so at the start of trial 26 which is trial 25 in python
         #changed to 30
-        myFunctions.showText(winexp, "Give Break + Press Space ", (1, -1, -1))
-        myFunctions.showText(win, u"Pause. Drück eine beliebige Taste um weiterzumachen ", (1, -1, -1))
+        
+        PauseTimer = core.CountdownTimer(120) #2 mins break
+        continueexpt = False
+        
+        if trial == 0: #very first trial we don't need break
+            # continueexpt is false and we wait for keypress below in "while not continueexpt"
+            
+            continueexpt = False
+            myFunctions.showText(winexp, "Waiting for first trial ", (1, -1, -1))
+            myFunctions.showText(win, u"Pause. Drück eine beliebige Taste um weiterzumachen ", (1, -1, -1))
+            
+        else: #on trial 30
+            continueexpt = True #we don't need to pause for keypress, expt will continue automatically after PauseTimer has elapsed
+            while PauseTimer.getTime() > 0:
+                #myFunctions.showText(winexp, "Give Break + Press Space ", (1, -1, -1))
+                #myFunctions.showText(win, u"Pause. Drück eine beliebige Taste um weiterzumachen ", (1, -1, -1))
+                myFunctions.showText(winexp, "Break: " + str("%.2f" % round(PauseTimer.getTime(),2)) + " s remaining", (1, -1, -1))
+                myFunctions.showText(win, u"Pause. Noch " + str("%.2f" % round(PauseTimer.getTime(),2)) + " s", (1, -1, -1))
+                win.flip()
+                winexp.flip()
+                #continueexpt = False
+                keypress = event.getKeys(keyList=['space', 'escape']) #wait for space
+                if keypress:
+                    if keypress[0] == "escape":
+                        QuitExperiment()
     else:
         myFunctions.showText(winexp, "Press Space ", (-1, -1, -1))
-        myFunctions.showText(win, u"Drück eine beliebige Taste ", (-1, -1, -1))
+        #myFunctions.showText(win, u"Drück eine beliebige Taste ", (-1, -1, -1))
+        continueexpt = True
     myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
     myFunctions.showDebugText(winexp, "Stimulus: " + str(stimulus[1]),  (0, -200),whichComputer) 
     myFunctions.showDebugText(winexp,("Left" + debugText1),debugTextPos1,whichComputer)
@@ -1402,7 +1513,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     win.flip()
     winexp.flip()
     
-    continueexpt = False
+    
     keypress_exp = []
     keypress_bbox = [] 
     
@@ -1500,7 +1611,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     stimonsetTimer = core.CountdownTimer(delay_before_stim_main_experiment - 0.5 + random.uniform(-2,2)) #delay as defined above plus jitter, minus the 500ms wait we already had
     stimonsetTimer.reset()
     delay_stimonset_curr_trial = stimonsetTimer.getTime() #record how much the delay was in each trial, you never know if it will be needed in the analysis XD
-    print(delay_stimonset_curr_trial)
+    print("delay stim onset current trial: " + str(delay_stimonset_curr_trial))
     myFunctions.showFix(winexp, "Wait", (1, 1, 1))
     #print(stimonsetTimer.getTime())
     
@@ -1581,6 +1692,8 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     #myCue.draw() #1st stim
     myCueExp.draw()
     myFunctions.showFix(winexp, "!!!", (1, 1, 1))
+    myFunctions.showFix(win, "+", (1, 1, 1))
+            
     if timestampprinted_stim_onset == False:  # if not False
                     print(("After stim onset requested ", core.getTime() - getready))
                     writerlog.writerow(["!!! Stim onset request", core.getTime(), core.getTime()-t0, core.getTime()-getready])
@@ -1686,6 +1799,9 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     if eyetrack_mode:
         tk.sendMessage("Winflip after stimulus onset request")
         
+        
+    bbox.reset() #reset the bbox here already as it takes some time for it to do it (at least 300ms)    
+        
     if thermode:    
         # Record temps for 1s
         start_time = time.time()
@@ -1716,6 +1832,15 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     ## Record response 
     ############################
     #core.wait(1.0)
+    
+    ResponseTimer = core.CountdownTimer(3) #3 seconds to make resp
+    ResponseTimer.reset()
+    
+   
+    #core.wait(0.3)
+    
+    
+    
     myFunctions.showText(win, 'Welcher Reiz ist schmerzhafter?', (1, 1, 1))
     win.flip()
     RTstart = clock.getTime()
@@ -1753,9 +1878,17 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
 #                    if eyetrack_mode:
 #                        tk.sendMessage("Response offset")
 #                        print("Temperature rec finished, elapsed time: " + str(currtime - start_time))
-    while not submittedanswer: #in case the answer was not given during the temperature recording phase
+    
+    
+    #while not submittedanswer: #in case the answer was not given during the temperature recording phase
+    while ResponseTimer.getTime() > 0: #while within our 3 second window
+        
+        if not submittedanswer:
             #print("Recording ans")  
-            [submittedanswer, keypress] = myFunctions.RecordAnswer(parallel_port_mode, bbox)
+            [submittedanswer, keypress, keypresskeyboard] = myFunctions.RecordAnswer(parallel_port_mode, bbox)
+            if keypresskeyboard:
+                if keypresskeyboard[0] == "escape":
+                    QuitExperiment()
             if submittedanswer:
                 RTend = clock.getTime()
                 RT.append(RTend-RTstart)    
@@ -1763,6 +1896,15 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
                 writerlog.writerow(["Keypress", core.getTime(), core.getTime()-t0, core.getTime()-getready])
                 if eyetrack_mode:
                     tk.sendMessage("Response offset")
+                myFunctions.showFix(win, "+", (1, 1, 1))
+                win.flip()
+            
+    if not submittedanswer:
+        # if resp was not submitted, write a NaN for RT
+        RT.append("NaN")
+        print("No response detected!")
+        writerlog.writerow(["Keypress waiting timed out", core.getTime(), core.getTime()-t0, core.getTime()-getready])
+            
     #feedback
 #    print('correct = {}'.format(corrrespstim[stimulus]))
     if keypress != None: #check if not empty
