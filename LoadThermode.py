@@ -16,7 +16,7 @@ directory="//NOBACKUP2//Pred_spec//"
 import QST_functions
 
 
-
+core.wait(5.0)
 QST_functions.Burn_left([45, 25, 31, 25, 45], [1]*5, [100]*5, [100]*5)
 core.wait(5.0)
 QST_functions.Burn_left([26, 46, 31, 46, 26], [1]*5, [100]*5, [100]*5)

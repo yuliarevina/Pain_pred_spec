@@ -207,16 +207,43 @@ class TcsDevice:
         #print(datatemps[17:20])
         #print(datatemps[21:24])
         #print("End")
-        temperatures = [0, 0, 0, 0, 0]
+        temperatures = [-1, -1, -1, -1, -1]
         if len(datatemps) > 23:
             #neutral = float(datatemps[2:4]);
-            temperatures[0] = float(datatemps[5:8]) / 10;
-            temperatures[1] = float(datatemps[9:12]) / 10;
-            temperatures[2] = float(datatemps[13:16]) / 10;
-            temperatures[3] = float(datatemps[17:20]) / 10;
-            temperatures[4] = float(datatemps[21:24]) / 10;
+            try:
+                temperatures[0] = float(datatemps[5:8]) / 10;
+            except:
+                temperatures[0] = [-1]
+                print("Exception!")
+                print(temperatures)
+            try:    
+                temperatures[1] = float(datatemps[9:12]) / 10;
+            except:
+                temperatures[1] = [-1]
+                print("Exception!")
+                print(temperatures)
+            try:
+                temperatures[2] = float(datatemps[13:16]) / 10;
+            except:
+                temperatures[2] = [-1]    
+                print("Exception!")
+                print(temperatures)
+            try:    
+                temperatures[3] = float(datatemps[17:20]) / 10;
+            except:
+                temperatures[3] = [-1] 
+                print("Exception!")
+                print(temperatures)
+            try:    
+                temperatures[4] = float(datatemps[21:24]) / 10;
+            except:
+                temperatures[3] = [-1]    
+                print("Exception!")
+                print(temperatures)
         else:
-            temperatures = []
+            temperatures = [-1, -1, -1, -1, -1]
+            
+        #print("Final temp: " + str(temperatures))    
         return temperatures, datatemps
     
     
