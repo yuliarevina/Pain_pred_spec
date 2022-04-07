@@ -5,8 +5,9 @@
 
 from psychopy import core, clock, visual, event, monitors, data
 import pandas as pd
-import time, numpy, os, sys
+import time, numpy, os, sys, random
 import matplotlib.pyplot as plt # for plotting the results
+import QST_functions
 
 
 
@@ -35,6 +36,96 @@ def showDebugText(window, text, position, whichcomp):
         height=50, anchorHoriz="center", 
         anchorVert="center")
         message.draw()
+        
+        
+def PracticeSession(thermodeYN, win, winexp, arm, side, parallel_port_mode, bbox):
+        
+    
+    showText(win, "Practice Trial", (1, 1, 1))
+    showText(winexp, "Practice Trial", (1, 1, 1))
+    win.flip()
+    winexp.flip()
+    if side[0] == 0:
+        practicetemperature = [45, 45, 31, 31, 31]
+    else:
+        practicetemperature = [31, 31, 31, 45, 45]
+        
+    if thermodeYN:       
+          if arm[0] == 0: #left
+              
+              QST_functions.Burn_left(practicetemperature, [1]*5, [100]*5, [100]*5)
+          else:  #right
+              QST_functions.Burn_right(practicetemperature, [1]*5, [100]*5, [100]*5)
+              
+    core.wait(2.0)           
+    showText(win, "Welcher Reiz war warmer?", (1, 1, 1))
+    showText(winexp, "Welcher Reiz war warmer?", (1, 1, 1))
+    win.flip() 
+    winexp.flip()
+    submittedanswer = False
+    while not submittedanswer:
+        [submittedanswer, keypress] = RecordAnswer(parallel_port_mode, bbox)
+    if (side[0] == 0 and keypress[0] == "left") or (side[0] == 1 and keypress[0] == "right"):
+        #correct
+        showText(win, "Richtig! :)", (1, 1, 1))
+        showText(winexp, "Richtig! :)", (1, 1, 1))
+        win.flip()
+        winexp.flip()
+    else:
+        #incorrect
+        showText(win, "Leider nicht richtig! :(", (1, 1, 1))
+        showText(winexp, "Leider nicht richtig! :(", (1, 1, 1))
+        win.flip()
+        winexp.flip()
+        
+    
+    
+def RecordAnswer(parallel_port_mode, bbox):
+    submittedanswer = False
+    #keypress = []
+    
+    if parallel_port_mode:
+        bbox.reset()
+        keypress = bbox.getButtons(timeStamped=False)
+    else:
+        keypress = event.getKeys(keyList=['left', 'right', 'escape']) #wait for Left Arrow or Right Arrow key
+        #submittedanswer = True
+    
+    if keypress:
+        # participant can use both L and R response pads to give answer
+        # L button of each one is LEFT
+        # R button of each one is RIGHT
+        # People report it is easier to use L response pad when stim appears on the left
+        # and R response pad when stimulus appears on the right
+        if parallel_port_mode == True:
+            if keypress[0] == 0:
+                keypress[0] = "left" #recode to words
+                submittedanswer = True
+            elif keypress[0] == 1:
+                keypress[0] = "right" #recode to words
+                submittedanswer = True
+            elif keypress[0] == 2:
+                keypress[0] = "left" #recode to words
+                submittedanswer = True
+            elif keypress[0] == 3:    
+                keypress[0] = "right" #recode to words
+                submittedanswer = True
+            else:
+                print('Do you use the correct button box / keys?')
+        else:
+            if keypress[0] == 'left':
+                submittedanswer = True
+            elif keypress[0]  == 'right':
+                submittedanswer = True
+            elif keypress[0] == 'escape':
+                #QuitExperiment()
+                pass
+            elif keypress[0] == 'return':
+                pass
+            else:
+                print('Do you use the correct button box / keys?')
+    return submittedanswer, keypress            
+           
         
         
 def Eyetracking_calibration(filenameeyetrack, tk, win, winexp, scnWidth, scnHeight, dummyMode):

@@ -37,10 +37,10 @@ else:
 # *********************************************************    
 
 # used computer has a parallel port (for the button boxes)
-parallel_port_mode = True
+parallel_port_mode = False
 
 # eyetracking
-eyetrack_mode = True
+eyetrack_mode = False
 
 #brain amp mode
 brainAmp = False
@@ -81,7 +81,8 @@ if parallel_port_mode:
     p_in = parallel.Parallel(0)
     p_in.setDataDir(0)
     bbox = bb.ButtonBox(port = p_in, clock = timerRating)
-            
+else:
+    bbox = [] #some functions ask for this so need to define even if blank           
     
 # *******************************************************
 #                   Timing
@@ -142,6 +143,7 @@ myDlg.addField('Geschlecht:', choices=["M", "W", "D"])
 #myDlg.addField('Grating Ori:',45)
 myDlg.addField('Session:', choices=["Pain Location", "Pain Type"])
 myDlg.addField('Pain calibration?', choices=['Nein', 'Ja'])
+myDlg.addField('Practice Session?', choices=['Nein', 'Ja'])
 myDlg.addField('Cue order', choices=["1", "2", "3", "4", "5", "6"])
 myDlg.addField('Block', choices=["1", "2", "3", "4"])
 ok_data = myDlg.show()  # show dialog and wait for OK or Cancel
@@ -155,8 +157,9 @@ age = ok_data[1]
 sex = ok_data[2]
 sessiontype = ok_data[3]
 paincalibrationYN = ok_data[4]
-cueorder = ok_data[5]
-thisblock = ok_data[6]
+practicesessionYN = ok_data[5]
+cueorder = ok_data[6]
+thisblock = ok_data[7]
 
 
 # Can manually enter some temperatures from a previous calibration file if needed
@@ -227,50 +230,7 @@ def QuitExperiment():
 
     core.quit()
 
-def RecordAnswer():
-    submittedanswer = False
-    #keypress = []
-    
-    if parallel_port_mode:
-        bbox.reset()
-        keypress = bbox.getButtons(timeStamped=False)
-    else:
-        keypress = event.getKeys(keyList=['left', 'right', 'escape']) #wait for Left Arrow or Right Arrow key
-        #submittedanswer = True
-    
-    if keypress:
-        # participant can use both L and R response pads to give answer
-        # L button of each one is LEFT
-        # R button of each one is RIGHT
-        # People report it is easier to use L response pad when stim appears on the left
-        # and R response pad when stimulus appears on the right
-        if parallel_port_mode == True:
-            if keypress[0] == 0:
-                keypress[0] = "left" #recode to words
-                submittedanswer = True
-            elif keypress[0] == 1:
-                keypress[0] = "right" #recode to words
-                submittedanswer = True
-            elif keypress[0] == 2:
-                keypress[0] = "left" #recode to words
-                submittedanswer = True
-            elif keypress[0] == 3:    
-                keypress[0] = "right" #recode to words
-                submittedanswer = True
-            else:
-                print('Do you use the correct button box / keys?')
-        else:
-            if keypress[0] == 'left':
-                submittedanswer = True
-            elif keypress[0]  == 'right':
-                submittedanswer = True
-            elif keypress[0] == 'escape':
-                QuitExperiment()
-            elif keypress[0] == 'return':
-                pass
-            else:
-                print('Do you use the correct button box / keys?')
-    return submittedanswer, keypress          
+       
 
 ## Calibration file
 #filenamecalibration="{}/Ulrike functions/randomization_trials_session_2_calibration_short.csv".format(directory)
@@ -944,8 +904,8 @@ mechintensity_control = 128
 #
 
 
-expectation_rate = 2 # 2wice as often as the other stim; 66.6666%
-trialsperpointhigh = 16
+expectation_rate = 3 # 2wice or 3rice as often as the other stim; 66.6666% or 75%
+trialsperpointhigh = 18
 trialsperpointlow = numpy.int(trialsperpointhigh/expectation_rate)
 nBlocks = 4.0
 #noexpectation = numpy.int(numpy.floor((trialsperpointhigh+trialsperpointlow)/2)) #remove NONE trials for now
@@ -960,10 +920,10 @@ stimuli_list = []
 
 
 # Create list of stims
-# There will be some differences for the 3 blocks because of the specific number of trials and
+# There will be some differences for the 4 blocks because of the specific number of trials and
 # combinations of everything. Basically, can't divide all the trials into any number such that there is an
 # even number of every combination of everything across the blocks
-# N trials to create is N trials per pt divided by 3 blocks divided by 2 (half control first, half control second)
+# N trials to create is N trials per pt divided by 4 blocks divided by 2 (half control first, half control second)
 # Important: do 3.0 / 2.0 rather than 3 / 2 in python 2 to get a float result!!!
 if sessiontype == "Pain Type":
     for temperature_intensity in mytemperatures: #for each stimulus temperature
@@ -1027,14 +987,85 @@ if sessiontype == "Pain Type":
 elif sessiontype == "Pain Location": #same location but only thermal for now
     
         for temperature_intensity in mytemperatures: #for each stimulus temperature
-            for i in range(numpy.int(trialsperpointhigh/nBlocks/2.0)): #thermal high thermal presented, control position 1
-                stimuli_list.append([i+1, "LeftHigh_Left", 1, temperature_intensity, 0])
-            for i in range(numpy.int(trialsperpointhigh/nBlocks/2.0)): #thermal high thermal presented, control position 2
+            if thisblock == "1" : #round up or down as necessary
+                #HIGH LEFT
+                ntrialsiteratorHIGHLEFTCtrl1 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHLEFTCtrl2 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                
+                #LOW LEFT
+                ntrialsiteratorLOWLEFTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWLEFTCtrl2 = range(numpy.int(numpy.floor(trialsperpointlow/nBlocks/2.0)))
+                
+                #HIGH RIGHT
+                ntrialsiteratorHIGHRIGHTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHRIGHTCtrl2 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                
+                #LOW RIGHT
+                ntrialsiteratorLOWRIGHTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWRIGHTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                
+            elif thisblock == "2" :     
+                #HIGH LEFT
+                ntrialsiteratorHIGHLEFTCtrl1 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHLEFTCtrl2 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+               
+                #LOW LEFT
+                ntrialsiteratorLOWLEFTCtrl1 = range(numpy.int(numpy.floor(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWLEFTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+               
+                #HIGH RIGHT
+                ntrialsiteratorHIGHRIGHTCtrl1 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHRIGHTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointhigh/nBlocks/2.0)))
+               
+                #LOW RIGHT
+                ntrialsiteratorLOWRIGHTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWRIGHTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+               
+            elif thisblock == "3" :       
+                #HIGH LEFT
+                ntrialsiteratorHIGHLEFTCtrl1 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHLEFTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointhigh/nBlocks/2.0)))
+               
+                #LOW LEFT
+                ntrialsiteratorLOWLEFTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWLEFTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+               
+                #HIGH RIGHT
+                ntrialsiteratorHIGHRIGHTCtrl1 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHRIGHTCtrl2 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+               
+                #LOW RIGHT
+                ntrialsiteratorLOWRIGHTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWRIGHTCtrl2 = range(numpy.int(numpy.floor(trialsperpointlow/nBlocks/2.0)))
+                
+                
+            elif thisblock == "4" :       
+                #HIGH LEFT
+                ntrialsiteratorHIGHLEFTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHLEFTCtrl2 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))    
+                
+                #LOW LEFT
+                ntrialsiteratorLOWLEFTCtrl1 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWLEFTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+                
+                #HIGH RIGHT
+                ntrialsiteratorHIGHRIGHTCtrl1 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                ntrialsiteratorHIGHRIGHTCtrl2 = range(numpy.int(numpy.floor(trialsperpointhigh/nBlocks/2.0)))
+                
+                #LOW RIGHT
+                ntrialsiteratorLOWRIGHTCtrl1 = range(numpy.int(numpy.floor(trialsperpointlow/nBlocks/2.0)))
+                ntrialsiteratorLOWRIGHTCtrl2 = range(numpy.int(numpy.ceil(trialsperpointlow/nBlocks/2.0)))
+               
+                
+                               
+            for i in ntrialsiteratorHIGHLEFTCtrl1: #thermal high thermal presented, control position 1
+                    stimuli_list.append([i+1, "LeftHigh_Left", 1, temperature_intensity, 0])
+            for i in ntrialsiteratorHIGHLEFTCtrl2: #thermal high thermal presented, control position 2
                 stimuli_list.append([i+1, "LeftHigh_Left", 1, temperature_intensity, 1])
                 
-            for i in range(numpy.int(trialsperpointlow/nBlocks/2.0)): # mechano high thermal presented, control position 1
+            for i in ntrialsiteratorLOWLEFTCtrl1: # mechano high thermal presented, control position 1
                 stimuli_list.append([i+1, "RightHigh_Left", 4, temperature_intensity, 0])       
-            for i in range(numpy.int(trialsperpointlow/nBlocks/2.0)): # mechano high thermal presented, control position 2
+            for i in ntrialsiteratorLOWLEFTCtrl2: # mechano high thermal presented, control position 2
                 stimuli_list.append([i+1, "RightHigh_left", 4, temperature_intensity, 1])  
                             
 #            #something a bit different needs to happen for the no expectation because of the odd N of trials
@@ -1056,14 +1087,14 @@ elif sessiontype == "Pain Location": #same location but only thermal for now
 #                    stimuli_list.append([i+1, "Noexpect_Left", 5, temperature_intensity, 1])  
 
             
-            for i in range(numpy.int(trialsperpointlow/nBlocks/2.0)): # thermal high mechano presented, control position 1
+            for i in ntrialsiteratorLOWRIGHTCtrl1: # thermal high mechano presented, control position 1
                 stimuli_list.append([i+1, "LeftHigh_Right", 2, temperature_intensity, 0])    
-            for i in range(numpy.int(trialsperpointlow/nBlocks/2.0)): # thermal high mechano presented, control position 2
+            for i in ntrialsiteratorLOWRIGHTCtrl2: # thermal high mechano presented, control position 2
                 stimuli_list.append([i+1, "LeftHigh_Right", 2, temperature_intensity, 1]) 
                 
-            for i in range(numpy.int(trialsperpointhigh/nBlocks/2.0)): # mechano high mechano presented, control position 1
+            for i in ntrialsiteratorHIGHRIGHTCtrl1: # mechano high mechano presented, control position 1
                 stimuli_list.append([i+1, "RightHigh_Right", 3, temperature_intensity, 0]) 
-            for i in range(numpy.int(trialsperpointhigh/nBlocks/2.0)): # mechano high mechano presented, control position 2
+            for i in ntrialsiteratorHIGHRIGHTCtrl2: # mechano high mechano presented, control position 2
                 stimuli_list.append([i+1, "RightHigh_Right", 3, temperature_intensity, 1]) 
                 
                 
@@ -1231,6 +1262,19 @@ if paincalibrationYN == "Nein":
             core.wait(3.0)
 
 
+if practicesessionYN == "Ja":
+    arm = [0, 1]
+    random.shuffle(arm)
+    side = [0, 1]
+    random.shuffle(side)
+    
+    for i in range(10):
+        myFunctions.PracticeSession(thermode, win, winexp, arm, side, parallel_port_mode, bbox)
+        arm = numpy.flip(arm) #alternate the arms
+        random.shuffle(side) # pick a random side (might not be equalized then, but shouldn't matter
+        #that much if it's like 4 left, 6 right. More important probably to equalize the arms)
+        core.wait(2)
+    
 
 
 #for each trial
@@ -1711,7 +1755,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
 #                        print("Temperature rec finished, elapsed time: " + str(currtime - start_time))
     while not submittedanswer: #in case the answer was not given during the temperature recording phase
             #print("Recording ans")  
-            [submittedanswer, keypress] = RecordAnswer()
+            [submittedanswer, keypress] = myFunctions.RecordAnswer(parallel_port_mode, bbox)
             if submittedanswer:
                 RTend = clock.getTime()
                 RT.append(RTend-RTstart)    
