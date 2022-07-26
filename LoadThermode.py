@@ -17,12 +17,12 @@ import QST_functions
 
 
 core.wait(5.0)
-QST_functions.Burn_left([45, 25, 31, 25, 45], [1]*5, [100]*5, [100]*5)
+QST_functions.Burn_left([47, 25, 31, 25, 47], [1]*5, [100]*5, [100]*5)
 core.wait(5.0)
-QST_functions.Burn_left([26, 46, 31, 46, 26], [1]*5, [100]*5, [100]*5)
+QST_functions.Burn_left([26, 48, 31, 48, 26], [1]*5, [100]*5, [100]*5)
 core.wait(5.0)
-QST_functions.Burn_right([45, 25, 31, 25, 45], [1]*5, [100]*5, [100]*5)
+QST_functions.Burn_right([47, 25, 31, 25, 47], [1]*5, [100]*5, [100]*5)
 core.wait(5.0)
-QST_functions.Burn_right([26, 46, 31, 46, 26], [1]*5, [100]*5, [100]*5)
+QST_functions.Burn_right([26, 48, 31, 48, 26], [1]*5, [100]*5, [100]*5)
 core.wait(5.0)
     

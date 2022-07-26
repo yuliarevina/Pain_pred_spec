@@ -58,8 +58,8 @@ def PracticeSession(thermodeYN, win, winexp, arm, side, parallel_port_mode, bbox
               QST_functions.Burn_right(practicetemperature, [1]*5, [100]*5, [100]*5)
               
     core.wait(2.0)           
-    showText(win, "Welcher Reiz war warmer?", (1, 1, 1))
-    showText(winexp, "Welcher Reiz war warmer?", (1, 1, 1))
+    showText(win, u"Welcher Reiz war wärmer?", (1, 1, 1))
+    showText(winexp, u"Welcher Reiz war wärmer?", (1, 1, 1))
     win.flip() 
     winexp.flip()
     submittedanswer = False
@@ -92,6 +92,7 @@ def RecordAnswer(parallel_port_mode, bbox):
         
     else:
         keypress = event.getKeys(keyList=['left', 'right', 'escape']) #wait for Left Arrow or Right Arrow key
+        keypresskeyboard = event.getKeys(keyList=['left', 'right', 'escape']) #wait for Left Arrow or Right Arrow key
         #submittedanswer = True
     
     if keypress:

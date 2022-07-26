@@ -11,6 +11,11 @@ from scipy.io import savemat
 logging.console.setLevel(logging.WARNING)
 
 
+import psychopy
+psychopy.prefs.hardware['audioLib'] = ['PTB', 'pyo','pygame']
+print(psychopy.prefs.hardware)
+
+
 #########
 # Stuff still to add
 
@@ -40,7 +45,7 @@ else:
 parallel_port_mode = True
 
 # eyetracking
-eyetrack_mode = False
+eyetrack_mode = True
 
 #brain amp mode
 brainAmp = False
@@ -115,7 +120,6 @@ delay_after_stim_main_experiment = 3.0 #how long to wait after stim onset, so if
 delay_before_stim_main_experiment = 8.0 #gives time for experimenter to start the stimulus (for pinpricks it's manually driven)
 #5 s countdown plus around 3 s extra (the exact time will be jittered) because 8s min ISI is good. With the jitter will be between 6 and 10
 stimonsetTimer = core.CountdownTimer(delay_before_stim_main_experiment)  # runs backwards
-responseWindow_calibration = 6.0 #how long to give for response in calibration
 #stimonsetTimer.add(delay_before_stim_main_experiment)
 # how to use
 # while stimonsetTimer.getTime() > 0:
@@ -184,7 +188,18 @@ thisblock = ok_data[7]
 #temperatures_debug = [45.5, 47.7, 49.9, 52.1, 54.3] # Pilot Sub 04
 #temperatures_debug = [50.3, 51.1, 52.0, 52.9, 53.8] # Pilot Sub 05
 #temperatures_debug = [50.9, 52.0, 53.0, 54.1, 55.1] # Pilot Sub 06
-temperatures_debug = [48.5, 49.7, 50.9, 52.1, 53.3] # Pilot Sub 07
+#temperatures_debug = [48.5, 49.7, 50.9, 52.1, 53.3] # Pilot Sub 07
+#temperatures_debug = [48.8, 49.7, 50.5, 51.3, 52.2] # Sub 01
+#temperatures_debug = [44.8, 45.8, 46.7, 47.7, 48.6] # Sub 02
+#temperatures_debug = [48.2, 48.8, 49.5, 50.1, 50.8] # Sub 03
+#temperatures_debug = [47.5, 48.2, 48.8, 49.4, 50.0] # Sub 04
+#temperatures_debug = [50.5, 51.6, 52.6, 53.7, 54.7] # Sub 05
+#temperatures_debug = [50.7, 51.8, 52.9, 54.0, 55.1] # Sub 06
+#temperatures_debug = [47.4, 48.6, 49.8, 51.0, 52.2]# Sub 07
+#temperatures_debug = [49.3, 50.1, 50.9, 51.7, 52.5]# Sub 08
+#temperatures_debug = [47.8, 48.6, 49.3, 50.0, 50.8]# Sub 09
+#temperatures_debug = [44.0, 45.5, 47.0, 48.5, 50.0]# Sub 10
+temperatures_debug = [49.3, 50.0, 50.8, 51.6, 52.3]# Sub 11
 
 # routine to quit the experiment e.g. at the end or when escape is pressed
 def QuitExperiment():
@@ -666,6 +681,20 @@ if paincalibrationYN == 'Ja':
                 51.0, 51.0, 51.5,
                 51.5, 52.0, 52.0]
             
+            
+#             #try more trials in painful range
+#            temperatures_calibration_real = [ # not including half degree increments
+#                43.0, 43.5, 44.0,
+#                44.5, 45.0, 45.5,
+#                46.0, 46.5, 47.0,
+#                47.5, 48.0, 48.5,
+#                49.0, 49.5, 50.0, 50.0, 50.5,
+#                50.5, 51.0, 51.0, 51.5, 51.5,
+#                52.0, 52.0, 53.5,
+#                53.5, 54.0, 55.0]
+            
+            
+            
             random.shuffle(temperatures_calibration_real)
             
             temperatures_calibration = temperatures_calibration_real
@@ -705,7 +734,7 @@ if paincalibrationYN == 'Ja':
                 currentPos = 50
                 textObjSub.setText(u"Bitte bewerten Sie\ndie Intensität\ndieses Reizes\n")
                 
-                CalibrationRatingTimer = core.CountdownTimer(responseWindow_calibration)
+                CalibrationRatingTimer = core.CountdownTimer(5)
                 CalibrationRatingTimer.reset()
                 
                 # ********************** for when we want to remove self-paced *************
@@ -1799,8 +1828,8 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     if eyetrack_mode:
         tk.sendMessage("Winflip after stimulus onset request")
         
-        
-    bbox.reset() #reset the bbox here already as it takes some time for it to do it (at least 300ms)    
+    if parallel_port_mode:    
+        bbox.reset() #reset the bbox here already as it takes some time for it to do it (at least 300ms)    
         
     if thermode:    
         # Record temps for 1s
@@ -1907,7 +1936,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             
     #feedback
 #    print('correct = {}'.format(corrrespstim[stimulus]))
-    if keypress != None: #check if not empty
+    if keypress: #check if not empty
         print('key = {}'. format(keypress[0]))
 #        if corrrespstim[stimulus] == key[0]:
 #            myFunctions.showText(win, 'correct!', (1, 1, 1))
@@ -1952,7 +1981,8 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
    # writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity", "Comparison Intensity", "Position of Control", "Sub Resp Raw" "Sub Resp Comparison More Pain", "RT"]) # data file column headers
     print("Write to file trial {}".format(trial+1))
     writer.writerow([trial+1, stimulus[1], stimulus[2], myPainControlIntensity, myPainIntensity, stimulus[4], keypress[0], response, RT[trial], delay_stimonset_curr_trial]) # data file column headers
-    
+    datafilewrite.flush() #force write to file, so we don't wait for file.close(). In case script crashes
+    logfilewrite.flush()
     
     
     
