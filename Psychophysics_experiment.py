@@ -151,6 +151,7 @@ myDlg.addField('Pain calibration?', choices=['Nein', 'Ja'])
 myDlg.addField('Practice Session?', choices=['Nein', 'Ja'])
 myDlg.addField('Cue order', choices=["1", "2", "3", "4", "5", "6"])
 myDlg.addField('Block', choices=["1", "2", "3", "4"])
+myDlg.addField('Last block? Ask about subjective expectation', choices=["Nein", "Ja"])
 ok_data = myDlg.show()  # show dialog and wait for OK or Cancel
 if myDlg.OK:  # or if ok_data is not None
     print(ok_data)
@@ -165,6 +166,7 @@ paincalibrationYN = ok_data[4]
 practicesessionYN = ok_data[5]
 cueorder = ok_data[6]
 thisblock = ok_data[7]
+expectationQ = ok_data[8]
 
 
 # Can manually enter some temperatures from a previous calibration file if needed
@@ -199,7 +201,9 @@ thisblock = ok_data[7]
 #temperatures_debug = [49.3, 50.1, 50.9, 51.7, 52.5]# Sub 08
 #temperatures_debug = [47.8, 48.6, 49.3, 50.0, 50.8]# Sub 09
 #temperatures_debug = [44.0, 45.5, 47.0, 48.5, 50.0]# Sub 10
-temperatures_debug = [49.3, 50.0, 50.8, 51.6, 52.3]# Sub 11
+#temperatures_debug = [49.3, 50.0, 50.8, 51.6, 52.3]# Sub 11
+#temperatures_debug = [49.3, 50.4, 51.4, 52.5, 53.6]# Sub 12
+temperatures_debug = [50.1, 51.0, 51.9, 52.8, 53.7]# Sub 13
 
 # routine to quit the experiment e.g. at the end or when escape is pressed
 def QuitExperiment():
@@ -1992,7 +1996,12 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     #core.wait(1.0)
 
 
-
+# Rate subjective expectation probabilities
+if expectationQ == "Ja":
+    ratingofExpectation = []
+    myFunctions.RatingExpectation(win, winexp, scnWidth, scnHeight, parallel_port_mode, bbox, ratingofExpectation)
+    with open(filenamedata + '_ExpectationRating.txt', 'w') as f:
+        f.write(str(ratingofExpectation))
 
 # show goodbye screen
 print("End")

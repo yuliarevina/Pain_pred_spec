@@ -7,7 +7,7 @@ from psychopy import core, clock, visual, event, monitors, data
 import pandas as pd
 import time, numpy, os, sys, random
 import matplotlib.pyplot as plt # for plotting the results
-import QST_functions
+
 
 
 
@@ -50,7 +50,8 @@ def PracticeSession(thermodeYN, win, winexp, arm, side, parallel_port_mode, bbox
     else:
         practicetemperature = [31, 31, 31, 45, 45]
         
-    if thermodeYN:       
+    if thermodeYN: 
+          import QST_functions
           if arm[0] == 0: #left
               
               QST_functions.Burn_left(practicetemperature, [1]*5, [100]*5, [100]*5)
@@ -262,3 +263,123 @@ def Eyetracking_calibration(filenameeyetrack, tk, win, winexp, scnWidth, scnHeig
     # to stop recording
     #tk.stopRecording()  # stop recording       
     return tk, edf_running_name    
+
+
+def RatingExpectation(win, winexp, scnWidth, scnHeight, parallel_port_mode, bbox, ratingofExpectation):
+     question = []
+     question.append(u"Wie häufig hatten Sie das Gefühl,\ndass das Bild den korrekten Arm vorhergesagt hat?")
+     question.append(u"Nachdem ich das Bild in jedem Durchgang gesehen habe,\nwartete ich auf den Schmerz auf dem vorhergesagten Arm")
+     labels = []
+     labels.append([u'Nie', u'Immer'])
+     labels.append([u'Stimme überhaupt nicht zu', u'Stimme komplett zu'])
+    
+     for i in range(2):
+         # generate text and rating scale objects     
+         textObjExp = visual.TextStim(win=winexp, text="", color="black", height = 20, units="pix")
+         textObjSub = visual.TextStim(win=win, text="", color="black", height = 40, units="pix")
+         dotObj = visual.Circle(win=win, fillColor="white", lineColor="white",radius=[12,12],units="pix")
+         ratingExpectation = visual.RatingScale(win = win, low = 0, high = 100, markerStart = 50, textSize=0.75,
+         marker = 'triangle', stretch = 1.5, tickHeight = 1.5, tickMarks = [0,100],textColor='black',lineColor='black',
+         labels = labels[i],
+         showAccept = False)
+         ratingExpectationExp = visual.RatingScale(win = winexp, low = 0, high = 100, markerStart = 50, textSize=0.75,
+         marker = 'triangle', stretch = 1.5, tickHeight = 1.5, tickMarks = [0,100],textColor='black',lineColor='black',
+         labels = labels[i],
+         showAccept = False)
+         
+         submittedanswer = False
+         ratingExpectation.reset()
+         ratingExpectationExp.reset()
+         currentPos = 50
+         textObjSub.setText(question[i])
+         textObjExp.setText(question[i])
+               
+         ExpectationRatingTimer = core.CountdownTimer(15)
+         ExpectationRatingTimer.reset()
+                    
+         # ********************** for when we want to remove self-paced *************
+         while ExpectationRatingTimer.getTime() > 0:
+             if not submittedanswer:
+                 ratingExpectation.markerPlacedAt = currentPos
+                 ratingExpectation.draw()
+                 textObjSub.draw()
+                        
+                 ratingExpectationExp.markerPlacedAt = currentPos
+                 ratingExpectationExp.draw()
+                        
+                 win.flip()
+                 winexp.flip()
+                     
+                 if parallel_port_mode:
+                     bbox.reset()
+                     keypress = bbox.getButtons(timeStamped=False)
+                     keypresskeyboard = event.getKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
+                     if keypresskeyboard:
+                         if keypresskeyboard[0] == "escape":
+                             #QuitExperiment()
+                             pass
+                         elif keypresskeyboard[0] == "r":
+                             redo = True
+                             print("Redo = True")
+                            #print(keypresskeyboard)
+                         else:
+                             keypress = event.waitKeys(keyList=['left', 'right', 'escape', 'return', 'r']) #wait for Left Arrow or Right Arrow key
+                        
+                        
+                     if keypress:
+                         if parallel_port_mode == True:
+                             #print(keypress)
+                             # move left
+                             if keypress[0] == 0:
+                                 currentPos = currentPos - 1
+                                 # move right
+                             elif keypress[0] == 1:
+                                 currentPos = currentPos + 1
+                             elif keypress[0] == 2:
+                                 currentPos = currentPos - 1
+                             elif keypress[0] == 3:    
+                                 currentPos = currentPos + 1
+                             else:
+                                 print('Do you use the correct button box / keys?')
+                                
+                         else:
+                             #print(keypress)
+                             # move left
+                             if keypress[0] == 'left':
+                                 currentPos = currentPos - 1
+                                 # move right
+                             elif keypress[0]  == 'right':
+                                 currentPos = currentPos + 1
+                             elif keypress[0] == 'escape':
+                                 #quitRoutine()
+                                 pass
+                             elif keypress[0] == 'return':
+                                 submittedanswer = True
+                             elif keypress[0] == 'r':
+                                  redo = True
+                                  print("Redo = True")
+                                 #print(redo)
+                             else:
+                                  print('Do you use the correct button box / keys?')
+                    
+                                
+                     if currentPos > 100:
+                         currentPos = 100
+                     elif currentPos < 0:
+                         currentPos = 0
+                            
+                     ratingExpectation.markerPlacedAt = currentPos
+                     ratingExpectation.draw()
+                     textObjSub.draw()
+                     ratingExpectationExp.markerPlacedAt = currentPos
+                     ratingExpectationExp.draw()
+                     win.flip()
+                     winexp.flip()
+                             #core.wait(0.01)  
+         ratingofExpectation.append(ratingExpectation.getRating())
+         print(ratingofExpectation)
+                    
+         winexp.flip()
+         win.flip()
+     
+     return(ratingofExpectation)
