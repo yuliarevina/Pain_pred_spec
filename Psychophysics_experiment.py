@@ -150,7 +150,7 @@ myDlg.addField('Session:', choices=["Pain Location", "Pain Type"])
 myDlg.addField('Pain calibration?', choices=['Nein', 'Ja'])
 myDlg.addField('Practice Session?', choices=['Nein', 'Ja'])
 myDlg.addField('Cue order', choices=["1", "2", "3", "4", "5", "6"])
-myDlg.addField('Block', choices=["1", "2", "3", "4"])
+myDlg.addField('Block Type', choices=["1", "2", "3", "4"])
 myDlg.addField('Last block? Ask about subjective expectation', choices=["Nein", "Ja"])
 ok_data = myDlg.show()  # show dialog and wait for OK or Cancel
 if myDlg.OK:  # or if ok_data is not None
@@ -203,7 +203,42 @@ expectationQ = ok_data[8]
 #temperatures_debug = [44.0, 45.5, 47.0, 48.5, 50.0]# Sub 10
 #temperatures_debug = [49.3, 50.0, 50.8, 51.6, 52.3]# Sub 11
 #temperatures_debug = [49.3, 50.4, 51.4, 52.5, 53.6]# Sub 12
-temperatures_debug = [50.1, 51.0, 51.9, 52.8, 53.7]# Sub 13
+#temperatures_debug = [50.1, 51.0, 51.9, 52.8, 53.7]# Sub 13
+#temperatures_debug = [50.8, 51.9, 53.0, 54.2, 55.3]# Sub 14
+#temperatures_debug = [48.1, 49.1, 50.2, 51.2, 52.2]# Sub 15
+#temperatures_debug = [45.7, 47.2, 48.8, 50.3, 51.9]# Sub 16
+#temperatures_debug = [48.3, 48.9, 49.6, 50.3, 51.0]# Sub 17
+#temperatures_debug = [49.2, 50.2, 51.1, 52.1, 53.0]# Sub 18
+#temperatures_debug = [48.9, 49.7, 50.2, 51.3, 52.0]# Sub 19
+#temperatures_debug = [52.3, 53.3, 54.2, 55.2, 56.2]# Sub 20
+#temperatures_debug = [48.8, 49.4, 50.0, 50.6, 51.2]# Sub 21
+#temperatures_debug = [50.0, 51.3, 52.6, 54.0, 55.3]# Sub 22
+#temperatures_debug = [46.9, 48.0, 49.1, 50.2, 51.4]# Sub 23
+#temperatures_debug = [54.5, 55.8, 57.1, 58.5, 59.8]# Sub 24
+#temperatures_debug = [44.2, 46.7, 49.2, 51.8, 54.3]# Sub 25
+#temperatures_debug = [50.3, 51.2, 52.1, 53.0, 53.9]# Sub 26
+#temperatures_debug = [50.0, 51.0, 52.0, 53.0, 54.0]# Sub 27
+#temperatures_debug = [53.2, 54.4, 55.6, 56.8, 58.0]# Sub 28
+#temperatures_debug = [53.9, 55.2, 56.6, 58.0, 59.3]# Sub 29
+#temperatures_debug = [46.6, 48.0, 49.4, 50.8, 52.2]# Sub 30
+#temperatures_debug = [51.2, 52.3, 53.5, 54.6, 55.7]# Sub 31
+#temperatures_debug = [49.0, 50.4, 51.7, 53.0, 54.4]# Sub 32
+#temperatures_debug = [49.0, 49.8, 50.6, 51.4, 52.2]# Sub 33
+#temperatures_debug = [48.7, 49.7, 50.7, 51.7, 52.7]# Sub 34
+#temperatures_debug = [50.3, 51.6, 52.9, 54.3, 55.6]# Sub 35
+#temperatures_debug = [51.0, 52.1, 53.1, 54.2, 55.2]# Sub 36
+#temperatures_debug = [48.9, 49.5, 50.2, 50.8, 51.5]# Sub 37
+#temperatures_debug = [48.9, 49.5, 50.2, 50.8, 51.5]# Sub 38
+#temperatures_debug = [50.6, 51.6, 52.7, 53.7, 54.7]# Sub 39
+#temperatures_debug = [53.4, 54.7, 56.0, 57.3, 58.6]# Sub 40
+#temperatures_debug = [49.8, 50.8, 51.8, 52.7, 53.7]# Sub 41
+#temperatures_debug = [46.3, 47.7, 49.1, 50.5, 51.9]# Sub 42
+temperatures_debug = [49.1, 49.9, 50.8, 51.7, 52.6]# Sub 43
+
+
+
+
+
 
 # routine to quit the experiment e.g. at the end or when escape is pressed
 def QuitExperiment():
@@ -686,7 +721,7 @@ if paincalibrationYN == 'Ja':
                 51.5, 52.0, 52.0]
             
             
-#             #try more trials in painful range
+             #try more trials in painful range
 #            temperatures_calibration_real = [ # not including half degree increments
 #                43.0, 43.5, 44.0,
 #                44.5, 45.0, 45.5,
@@ -697,6 +732,32 @@ if paincalibrationYN == 'Ja':
 #                52.0, 52.0, 53.5,
 #                53.5, 54.0, 55.0]
             
+            
+            
+#                         #try more trials in painful range
+#            temperatures_calibration_real = [ # not including half degree increments
+#                43.0, 43.5, 44.0,
+#                47.5, 48.0, 48.5,
+#                49.0, 49.5, 50.0,
+#                50.5, 51.0, 51.5,
+#                52.0, 52.5, 53.0, 53.0, 53.5,
+#                53.5, 54.0, 54.0, 54.5, 54.5,
+#                55.0, 55.0, 56.5,
+#                56.5, 57.0, 58.0]
+#            
+            
+            
+                                     #try more trials in painful range
+#            temperatures_calibration_real = [ # not including half degree increments
+#                35.0, 36.5, 37.0,
+#                38.5, 39.0, 40.5,
+#                41.0, 42.5, 43.0,
+#                44.5, 45.0, 51.5,
+#                52.0, 52.5, 53.0, 53.0, 53.5,
+#                53.5, 54.0, 54.0, 54.5, 54.5,
+#                55.0, 55.0, 56.5,
+#                56.5, 57.0, 58.0]
+#            
             
             
             random.shuffle(temperatures_calibration_real)

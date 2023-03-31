@@ -383,3 +383,78 @@ def RatingExpectation(win, winexp, scnWidth, scnHeight, parallel_port_mode, bbox
          win.flip()
      
      return(ratingofExpectation)
+     
+     
+     
+def shufflelist(inputlist):
+    complete = 0
+    while complete == 0:
+        stimuli = inputlist.copy()
+        #print('Stimuli ' + str(stimuli))
+        shuffled = []
+        #print('Shuffled ' + str(shuffled))
+        
+
+
+        for i in range(len(stimuli) ):
+        #print('Iteration ' + str(i))
+        #print('len shuff ' + str(len(shuffled)))
+        #print('Shuffled more than 1 element? ' + str((len(shuffled) > 1)))
+        
+        # if shuffled contains more than 1 element
+        
+        
+            finalels = [x[-1] for x in stimuli]
+            
+            
+            if len(shuffled) > 1:
+                #print('Shuffled ' + str(shuffled))
+                #print('Shuffled last 2 ' + str(shuffled[-2:]))
+               
+                #print('Stimuli ' + str(stimuli))
+                #print('Shuff last 2 + stims ' + str(shuffled[-2:] + stimuli))
+                
+                #if last 2 elements of shuffled and the remaining elements of stimuli are the
+                # same, break out of For loop and reset to the 1st while loop
+                if len(set([shuffled[-2][-1], shuffled[-1][-1]] + finalels)) == 1:
+                    break
+            test = 0 #will act as a marker to make sure we don't pop a repeated value
+            print(i)
+           
+            savelist = stimuli.copy()
+            #print('Savelist')
+            #print(savelist)
+            while test == 0:
+                randomnumber = random.randint(0, len(stimuli) - 1)
+                #print('randomnumber')
+                #print(randomnumber)
+                possible = stimuli.pop(randomnumber)
+                #print('Possible')
+                #print(possible)
+                
+                #if we popped a value that is already double repeated, return list back to unpopped state
+                if len(shuffled) > 1:
+                    #print([shuffled[-2][-1], shuffled[-1][-1]] )
+                    #print([possible[-1]]*2)
+                    #print([shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2)
+                    if [shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2: #possible x repnum for var repeat
+                        stimuli = savelist.copy()
+                        #print('Already repeated, reset list')
+                        #print('Stimuli')
+                        #print(stimuli)
+                    # else accept the new value and set test to 1    
+                    else:
+                        #print('All good, append')
+                        shuffled.append(possible)
+                        test = 1
+                else:
+                    #print('All good, append')
+                    shuffled.append(possible)
+                    test = 1 #just set test to 1 and start a new iteration if only 1 number was in shuffled so far (so no duplicates to worry about)
+            print(' ')        
+    # if length of stimuli is 0 then we finished going through the list and didn't break out of for loop
+        if len(stimuli) == 0: #if last 1
+            #shuffled.append(stimuli[0])
+            complete = 1
+    print(shuffled)
+    return shuffled

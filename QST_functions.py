@@ -48,7 +48,7 @@ def Burn_left(temps, durs, rampspeeds, returnspeeds):
     thermode_left.set_return_speed(return_speed)
     thermode_left.set_temperatures(temperatures)
     
-    thermode_left.set_filter("low")
+    #thermode_left.set_filter("low")
     
     # start stimulation
     thermode_left.stimulate()   
@@ -123,7 +123,7 @@ def Burn_right(temps, durs, rampspeeds, returnspeeds):
     thermode_right.set_return_speed(return_speed)
     thermode_right.set_temperatures(temperatures)
     
-    thermode_right.set_filter("low")
+    #thermode_right.set_filter("low")
     
     # start stimulation
     thermode_right.stimulate()       
