@@ -59,8 +59,9 @@ brainAmp = False
 #thermode
 thermode = True
 #whichComputer = "Home" #python3
-whichComputer = "LaserLab" #python2
+#whichComputer = "LaserLab" #python2
 whichComputer = "MRI" #python3, run from project folder
+
 
 if whichComputer == "LaserLab":
     sys.path.insert(1, '/NOBACKUP2/Controlling_QST/')
@@ -69,9 +70,6 @@ if whichComputer == "LaserLab":
     if thermode:
         import QST_functions
     import ButtonBoxFunctions as bb
-    
-else:
-    directory="D:\\Yulia\\Psychopy Learning\\"
     
 elif whichComputer == "MRI":
     sys.path.append('/data/pt_02650/fMRI/Experiment_scripts/')
@@ -85,14 +83,12 @@ else:
     directory="D:\\Yulia\\Psychopy Learning\\"
     
 #%%
+
 if trigger_mode:    
     # parallel port from scanner
     p_sc = parallel.Parallel(port = 0)
     p_sc.setDataDir(0)
     p_sc.setData(0)    
-    
-    
-    
     
 
 if brainAmp:
@@ -109,15 +105,8 @@ if brainAmp:
             p_out.setData(int("00000001", 2))  # sets pin 2 high
         p_out.setData(0)
         
-if parallel_port_mode:
-    # initialize button boxes on port 0
-    timerRating=core.Clock()
-    p_in = parallel.Parallel(port = 0)
-    p_in.setDataDir(0)
-    bbox = bb.ButtonBox(port = p_in, clock = timerRating)
-else:
-    bbox = [] #some functions ask for this so need to define even if blank                   
-        
+
+      
         
 # if parallel_port_mode:
 #     # initialize button boxes on port 0
@@ -139,6 +128,7 @@ else:
     bbox = [] #some functions ask for this so need to define even if blank                 
         
 #%%  
+
         
 # *******************************************************
 #                   Timing
@@ -165,7 +155,6 @@ mytemperatures = [47]*5 # target temperatures in °C for the 5 zones
 stim_dur_calibration = 1.0 #in seconds
 stim_dur_main_expt = 1 #in seconds
 delay_before_resp_calib = 3.0 #in seconds, so rating scale appears X s after thermode onset
-delay_after_stim_calibration = 8.0
 delay_after_stim_calibration = 4.0 #was 8
 delay_after_stim_main_experiment = 3.0 #how long to wait after stim onset, so if stim is 1s long,
 #then this give 2s afterwards before rating scale
@@ -193,7 +182,6 @@ import myFunctions # import my own functions
 
 myDlg = gui.Dlg(title="fMRI calibration")
 myDlg.addText('Subject info')
-myDlg.addField('ID:', 00)
 myDlg.addField('ID:', '000')
 myDlg.addField('Alter:', 21)
 myDlg.addField('Geschlecht:', choices=["M", "W", "D"])
@@ -250,7 +238,6 @@ print(refreshratewin)
 
 
 
-=======
 # ***************************************************************
 #        Set up eyetracking
 # ***************************************************************
@@ -544,7 +531,8 @@ for side in whichSide: #do it twice, for each arm/leg
     #                49.0, 49.0, 50.0,
     #                50.0, 51.0, 51.0]
     #            
-        #try more trials in painful range
+
+    #    try more trials in painful range
         temperatures_calibration_real = [ # not including half degree increments
             42.0, 42.5, 43.0,
             43.5, 44.0, 44.5,
@@ -556,17 +544,8 @@ for side in whichSide: #do it twice, for each arm/leg
             51.5, 52.0, 52.0]
         
         
-    #             #try more trials in painful range
-    #            temperatures_calibration_real = [ # not including half degree increments
-    #                43.0, 43.5, 44.0,
-    #                44.5, 45.0, 45.5,
-    #                46.0, 46.5, 47.0,
-    #                47.5, 48.0, 48.5,
-    #                49.0, 49.5, 50.0, 50.0, 50.5,
-    #                50.5, 51.0, 51.0, 51.5, 51.5,
-    #                52.0, 52.0, 53.5,
-    #                53.5, 54.0, 55.0]
-        # # #try more trials in painful range
+
+      # # #try more trials in painful range
         # temperatures_calibration_real = [ # not including half degree increments
         #     43.0, 43.5, 44.0,
         #     44.5, 45.0, 45.5,
@@ -576,15 +555,15 @@ for side in whichSide: #do it twice, for each arm/leg
         #     50.5, 51.0, 51.0, 51.5, 51.5,
         #     52.0, 52.0, 53.5,
         #     53.5, 54.0, 55.0]
+
         
         
         
         random.shuffle(temperatures_calibration_real)
         
-        #temperatures_calibration = temperatures_calibration_real
-        temperatures_calibration = temperatures_calibration_debugging  
         temperatures_calibration = temperatures_calibration_real
         #temperatures_calibration = temperatures_calibration_debugging  
+
         random.shuffle(temperatures_calibration)
             
         for i, eachcalibrationtemp in enumerate(temperatures_calibration):
@@ -595,12 +574,10 @@ for side in whichSide: #do it twice, for each arm/leg
             # (stimulate only 2 pads at a time, so 1+2 then 4+5 then 1+2 and so on, to prevent sensitization etc)
             # changed now to 4 pads at a time after some feedback
             if i % 2 == 0: # even number trial
-                requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, eachcalibrationtemp, eachcalibrationtemp]
-            else: # odd number trial
-                requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, eachcalibrationtemp, eachcalibrationtemp]
                 requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp]
             else: # odd number trial
                 requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp]
+
                     
             
             core.wait(delay_after_stim_calibration + random.uniform(-2, 2)) #wait the delay (probably around 8s, defined above, plus a random jitter,

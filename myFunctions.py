@@ -138,7 +138,6 @@ def RecordAnswer(parallel_port_mode, bbox):
             elif keypress[0] == 'return':
                 pass
             else:
-                print('Do you use the correct button box / keys?')
                 print('Keyboard: Do you use the correct button box / keys?')
     else:
         keypress = ["NaN"]
@@ -419,9 +418,9 @@ def shufflelist(inputlist):
         # if shuffled contains more than 1 element
         
         
-            finalels = [x[-1] for x in stimuli]
             #finalels = [x[-1] for x in stimuli]
             finalels = [x[2] for x in stimuli]
+
             
             
             if len(shuffled) > 1:
@@ -433,16 +432,13 @@ def shufflelist(inputlist):
                 
                 #if last 2 elements of shuffled and the remaining elements of stimuli are the
                 # same, break out of For loop and reset to the 1st while loop
-                if len(set([shuffled[-2][-1], shuffled[-1][-1]] + finalels)) == 1:
-                    break
-            test = 0 #will act as a marker to make sure we don't pop a repeated value
-            print(i)
+
                 #if len(set([shuffled[-2][-1], shuffled[-1][-1]] + finalels)) == 1:
                 if len(set([shuffled[-2][2], shuffled[-1][2]] + finalels)) == 1:    
                     break
             test = 0 #will act as a marker to make sure we don't pop a repeated value
             #print(i)
-           
+
             savelist = stimuli.copy()
             #print('Savelist')
             #print(savelist)
@@ -459,9 +455,10 @@ def shufflelist(inputlist):
                     #print([shuffled[-2][-1], shuffled[-1][-1]] )
                     #print([possible[-1]]*2)
                     #print([shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2)
-                    if [shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2: #possible x repnum for var repeat
+
                     #if [shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2: #possible x repnum for var repeat
                     if [shuffled[-2][2], shuffled[-1][2]] == [possible[-1]]*2: #possible x repnum for var repeat
+
                         stimuli = savelist.copy()
                         #print('Already repeated, reset list')
                         #print('Stimuli')
@@ -475,8 +472,9 @@ def shufflelist(inputlist):
                     #print('All good, append')
                     shuffled.append(possible)
                     test = 1 #just set test to 1 and start a new iteration if only 1 number was in shuffled so far (so no duplicates to worry about)
-            print(' ')        
+
             #print(' ')        
+
     # if length of stimuli is 0 then we finished going through the list and didn't break out of for loop
         if len(stimuli) == 0: #if last 1
             #shuffled.append(stimuli[0])
