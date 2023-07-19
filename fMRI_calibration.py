@@ -60,6 +60,7 @@ brainAmp = False
 thermode = True
 #whichComputer = "Home" #python3
 whichComputer = "LaserLab" #python2
+whichComputer = "MRI" #python3, run from project folder
 
 if whichComputer == "LaserLab":
     sys.path.insert(1, '/NOBACKUP2/Controlling_QST/')
@@ -72,6 +73,18 @@ if whichComputer == "LaserLab":
 else:
     directory="D:\\Yulia\\Psychopy Learning\\"
     
+elif whichComputer == "MRI":
+    sys.path.append('/data/pt_02650/fMRI/Experiment_scripts/')
+    sys.path.append('/data/pt_02650/fMRI/Experiment_scripts/Ulrike_functions/')
+    directory="/data/pt_02650/fMRI/Experiment_scripts/"
+    if thermode:
+        import QST_functions
+    if parallel_port_mode: #doesn't work with trigger so don't use and set to false!    
+        import ButtonBoxFunctions as bb    
+else:
+    directory="D:\\Yulia\\Psychopy Learning\\"
+    
+#%%
 if trigger_mode:    
     # parallel port from scanner
     p_sc = parallel.Parallel(port = 0)
@@ -106,6 +119,26 @@ else:
     bbox = [] #some functions ask for this so need to define even if blank                   
         
         
+# if parallel_port_mode:
+#     # initialize button boxes on port 0
+#     timerRating=core.Clock()
+#     #p_in = parallel.Parallel(port = 0)
+#     #p_in.setDataDir(0)
+#     bbox = bb.ButtonBox(port = p_sc, clock = timerRating)
+# else:
+#     bbox = [] #some functions ask for this so need to define even if blank     
+
+
+if parallel_port_mode:
+    # initialize button boxes on port 0
+    timerRating=core.Clock()
+    p_in = parallel.Parallel(0)
+    p_in.setDataDir(0)
+    bbox = bb.ButtonBox(port = p_in, clock = timerRating)
+else:
+    bbox = [] #some functions ask for this so need to define even if blank                 
+        
+#%%  
         
 # *******************************************************
 #                   Timing
@@ -133,6 +166,7 @@ stim_dur_calibration = 1.0 #in seconds
 stim_dur_main_expt = 1 #in seconds
 delay_before_resp_calib = 3.0 #in seconds, so rating scale appears X s after thermode onset
 delay_after_stim_calibration = 8.0
+delay_after_stim_calibration = 4.0 #was 8
 delay_after_stim_main_experiment = 3.0 #how long to wait after stim onset, so if stim is 1s long,
 #then this give 2s afterwards before rating scale
 delay_before_stim_main_experiment = 8.0 #gives time for experimenter to start the stimulus (for pinpricks it's manually driven)
@@ -160,6 +194,7 @@ import myFunctions # import my own functions
 myDlg = gui.Dlg(title="fMRI calibration")
 myDlg.addText('Subject info')
 myDlg.addField('ID:', 00)
+myDlg.addField('ID:', '000')
 myDlg.addField('Alter:', 21)
 myDlg.addField('Geschlecht:', choices=["M", "W", "D"])
 #myDlg.addText('Experiment Info')
@@ -212,6 +247,53 @@ win = visual.Window(
     monitor=mon, color=[0.404,0.404,0.404], colorSpace='rgb', waitBlanking = False)
 refreshratewin = win.getActualFrameRate(nIdentical=10, nMaxFrames=100, nWarmUpFrames=10, threshold=1)
 print(refreshratewin)
+
+
+
+=======
+# ***************************************************************
+#        Set up eyetracking
+# ***************************************************************
+
+if eyetrack_mode:
+     # initialize eyetracking and run for the whole experiment
+    import pylink
+    from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
+    
+    #-------------------------------------------
+    dummyMode = False  
+    # True = simulated connection to eyetracker, 
+    # False = real connection to eyetracker
+    #-------------------------------------------
+    
+    iti_time = 4 # time the fixation cross will be shown (s)
+    dot_time = 4 # time a dot will be shown to the left or right (s)
+    num_trials = 5 # number of trials this will be done
+    
+    # Establish a link to the tracker
+    if not dummyMode:
+        tk = pylink.EyeLink('100.1.1.1')
+    else:
+        tk = pylink.EyeLink(None)
+
+    # ==============================================================
+    # preparation
+    # ==============================================================
+    # Ensure that relative paths start from the same directory as this script
+    try: #python 2, unicode string
+        thisDir = os.path.dirname(os.path.abspath(__file__)).decode(sys.getfilesystemencoding())
+    except: #python 3, string already unicode so no decode function can be used (or needed)
+        thisDir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(thisDir)
+    
+    # Make data folder
+    if not os.path.isdir("data"):
+        os.makedirs("data")
+    timestamp = data.getDateStr(format='%Y%m%d_%H%M')    
+    filenameeyetrack = thisDir + os.sep + 'data' + os.sep + 'eyetracking_%s' % (timestamp) + str(sub) + str(sex) + str(age) + str(sessiontype) +'.edf'
+
+    (tk, edf_running_name) = myFunctions.Eyetracking_calibration(filenameeyetrack, tk, win, winexp, scnWidth, scnHeight, dummyMode)        
+    #tk.sendMessage('Start Rec 2') 
 
 
 
@@ -484,6 +566,16 @@ for side in whichSide: #do it twice, for each arm/leg
     #                50.5, 51.0, 51.0, 51.5, 51.5,
     #                52.0, 52.0, 53.5,
     #                53.5, 54.0, 55.0]
+        # # #try more trials in painful range
+        # temperatures_calibration_real = [ # not including half degree increments
+        #     43.0, 43.5, 44.0,
+        #     44.5, 45.0, 45.5,
+        #     46.0, 46.5, 47.0,
+        #     47.5, 48.0, 48.5,
+        #     49.0, 49.5, 50.0, 50.0, 50.5,
+        #     50.5, 51.0, 51.0, 51.5, 51.5,
+        #     52.0, 52.0, 53.5,
+        #     53.5, 54.0, 55.0]
         
         
         
@@ -491,6 +583,8 @@ for side in whichSide: #do it twice, for each arm/leg
         
         #temperatures_calibration = temperatures_calibration_real
         temperatures_calibration = temperatures_calibration_debugging  
+        temperatures_calibration = temperatures_calibration_real
+        #temperatures_calibration = temperatures_calibration_debugging  
         random.shuffle(temperatures_calibration)
             
         for i, eachcalibrationtemp in enumerate(temperatures_calibration):
@@ -504,6 +598,9 @@ for side in whichSide: #do it twice, for each arm/leg
                 requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, eachcalibrationtemp, eachcalibrationtemp]
             else: # odd number trial
                 requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, 31, eachcalibrationtemp, eachcalibrationtemp]
+                requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp]
+            else: # odd number trial
+                requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp]
                     
             
             core.wait(delay_after_stim_calibration + random.uniform(-2, 2)) #wait the delay (probably around 8s, defined above, plus a random jitter,

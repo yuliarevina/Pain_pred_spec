@@ -106,17 +106,27 @@ def RecordAnswer(parallel_port_mode, bbox):
             if keypress[0] == 0:
                 keypress[0] = "left" #recode to words
                 submittedanswer = True
+                print("key 0 detected")
+                print(str(keypress[0]))
             elif keypress[0] == 1:
                 keypress[0] = "right" #recode to words
                 submittedanswer = True
+                print("key 1 detected")
+                print(str(keypress[0]))
             elif keypress[0] == 2:
                 keypress[0] = "left" #recode to words
                 submittedanswer = True
+                print("key 2 detected")
+                print(str(keypress[0]))
             elif keypress[0] == 3:    
                 keypress[0] = "right" #recode to words
                 submittedanswer = True
+                print("key 3 detected")
+                print(str(keypress[0]))
             else:
-                print('Do you use the correct button box / keys?')
+                print('Button Box: Do you use the correct button box / keys?')
+                print("key ? detected")
+                print(str(keypress[0]))
         else:
             if keypress[0] == 'left':
                 submittedanswer = True
@@ -129,6 +139,11 @@ def RecordAnswer(parallel_port_mode, bbox):
                 pass
             else:
                 print('Do you use the correct button box / keys?')
+                print('Keyboard: Do you use the correct button box / keys?')
+    else:
+        keypress = ["NaN"]
+    print("the function returned the following key")
+    print(str(keypress))            
     return submittedanswer, keypress , keypresskeyboard           
            
         
@@ -405,6 +420,8 @@ def shufflelist(inputlist):
         
         
             finalels = [x[-1] for x in stimuli]
+            #finalels = [x[-1] for x in stimuli]
+            finalels = [x[2] for x in stimuli]
             
             
             if len(shuffled) > 1:
@@ -420,6 +437,11 @@ def shufflelist(inputlist):
                     break
             test = 0 #will act as a marker to make sure we don't pop a repeated value
             print(i)
+                #if len(set([shuffled[-2][-1], shuffled[-1][-1]] + finalels)) == 1:
+                if len(set([shuffled[-2][2], shuffled[-1][2]] + finalels)) == 1:    
+                    break
+            test = 0 #will act as a marker to make sure we don't pop a repeated value
+            #print(i)
            
             savelist = stimuli.copy()
             #print('Savelist')
@@ -438,6 +460,8 @@ def shufflelist(inputlist):
                     #print([possible[-1]]*2)
                     #print([shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2)
                     if [shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2: #possible x repnum for var repeat
+                    #if [shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2: #possible x repnum for var repeat
+                    if [shuffled[-2][2], shuffled[-1][2]] == [possible[-1]]*2: #possible x repnum for var repeat
                         stimuli = savelist.copy()
                         #print('Already repeated, reset list')
                         #print('Stimuli')
@@ -452,6 +476,7 @@ def shufflelist(inputlist):
                     shuffled.append(possible)
                     test = 1 #just set test to 1 and start a new iteration if only 1 number was in shuffled so far (so no duplicates to worry about)
             print(' ')        
+            #print(' ')        
     # if length of stimuli is 0 then we finished going through the list and didn't break out of for loop
         if len(stimuli) == 0: #if last 1
             #shuffled.append(stimuli[0])
