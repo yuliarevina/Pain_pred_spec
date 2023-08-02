@@ -12,7 +12,8 @@ from psychopy import core, clock, data, visual, event, gui, monitors, logging #p
 
 sys.path.insert(1, '/NOBACKUP2/Controlling_QST/')
 sys.path.insert(1, '/NOBACKUP2/Pred_spec/Ulrike_functions/')
-directory="//NOBACKUP2//Pred_spec//"
+sys.path.append('/data/pt_02650/fMRI/Experiment_scripts/')
+directory="/data/pt_02650/fMRI/Experiment_scripts/"
 import QST_functions
 
 

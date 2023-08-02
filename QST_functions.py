@@ -123,7 +123,7 @@ def Burn_right(temps, durs, rampspeeds, returnspeeds):
     thermode_right.set_return_speed(return_speed)
     thermode_right.set_temperatures(temperatures)
     
-    #thermode_right.set_filter("low")
+    thermode_right.set_filter("low")
     
     # start stimulation
     thermode_right.stimulate()       
@@ -191,4 +191,5 @@ def RecordTemperature():
          [left_curr_temps, datatempleft] = thermode_left.get_temperatures()
          [right_curr_temps, datatempright] = thermode_right.get_temperatures()
          return left_curr_temps, right_curr_temps, datatempleft, datatempright
+         #return left_curr_temps, datatempleft
      

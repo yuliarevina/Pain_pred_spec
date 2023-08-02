@@ -106,27 +106,27 @@ def RecordAnswer(parallel_port_mode, bbox):
             if keypress[0] == 0:
                 keypress[0] = "left" #recode to words
                 submittedanswer = True
-                print("key 0 detected")
-                print(str(keypress[0]))
+                #print("key 0 detected")
+                #print(str(keypress[0]))
             elif keypress[0] == 1:
                 keypress[0] = "right" #recode to words
                 submittedanswer = True
-                print("key 1 detected")
-                print(str(keypress[0]))
+                #print("key 1 detected")
+                #print(str(keypress[0]))
             elif keypress[0] == 2:
                 keypress[0] = "left" #recode to words
                 submittedanswer = True
-                print("key 2 detected")
-                print(str(keypress[0]))
+                #print("key 2 detected")
+                #print(str(keypress[0]))
             elif keypress[0] == 3:    
                 keypress[0] = "right" #recode to words
                 submittedanswer = True
-                print("key 3 detected")
-                print(str(keypress[0]))
+                #print("key 3 detected")
+                #print(str(keypress[0]))
             else:
                 print('Button Box: Do you use the correct button box / keys?')
-                print("key ? detected")
-                print(str(keypress[0]))
+                #print("key ? detected")
+                #print(str(keypress[0]))
         else:
             if keypress[0] == 'left':
                 submittedanswer = True
@@ -141,8 +141,8 @@ def RecordAnswer(parallel_port_mode, bbox):
                 print('Keyboard: Do you use the correct button box / keys?')
     else:
         keypress = ["NaN"]
-    print("the function returned the following key")
-    print(str(keypress))            
+    #print("the function returned the following key")
+    #print(str(keypress))            
     return submittedanswer, keypress , keypresskeyboard           
            
         
@@ -404,50 +404,50 @@ def shufflelist(inputlist):
     complete = 0
     while complete == 0:
         stimuli = inputlist.copy()
-        #print('Stimuli ' + str(stimuli))
+        print('Stimuli ' + str(stimuli))
         shuffled = []
-        #print('Shuffled ' + str(shuffled))
-        
+        print('Shuffled ' + str(shuffled))
+        omission_counter = 0
 
 
         for i in range(len(stimuli) ):
-        #print('Iteration ' + str(i))
-        #print('len shuff ' + str(len(shuffled)))
-        #print('Shuffled more than 1 element? ' + str((len(shuffled) > 1)))
-        
-        # if shuffled contains more than 1 element
+            print('Iteration ' + str(i))
+            print('len shuff ' + str(len(shuffled)))
+            print('Shuffled more than 1 element? ' + str((len(shuffled) > 1)))
+            
+            # if shuffled contains more than 1 element
         
         
             #finalels = [x[-1] for x in stimuli]
             finalels = [x[2] for x in stimuli]
-
             
             
             if len(shuffled) > 1:
-                #print('Shuffled ' + str(shuffled))
-                #print('Shuffled last 2 ' + str(shuffled[-2:]))
+                print('Shuffled ' + str(shuffled))
+                print('Shuffled last 2 ' + str(shuffled[-2:]))
                
-                #print('Stimuli ' + str(stimuli))
-                #print('Shuff last 2 + stims ' + str(shuffled[-2:] + stimuli))
+                print('Stimuli ' + str(stimuli))
+                print('Shuff last 2 + stims ' + str(shuffled[-2:] + stimuli))
                 
                 #if last 2 elements of shuffled and the remaining elements of stimuli are the
                 # same, break out of For loop and reset to the 1st while loop
-
                 #if len(set([shuffled[-2][-1], shuffled[-1][-1]] + finalels)) == 1:
                 if len(set([shuffled[-2][2], shuffled[-1][2]] + finalels)) == 1:    
                     break
+                elif (sorted(set(finalels)) == [3, 4]) and omission_counter == 3: #last 3 elements of shuffled are omissions and the remaining elements are also omissions...
+                    break
             test = 0 #will act as a marker to make sure we don't pop a repeated value
-            #print(i)
-
+            print(i)
+           
             savelist = stimuli.copy()
-            #print('Savelist')
+            print('Savelist ' + str(savelist))
             #print(savelist)
             while test == 0:
                 randomnumber = random.randint(0, len(stimuli) - 1)
-                #print('randomnumber')
+                print('randomnumber ' + str(randomnumber))
                 #print(randomnumber)
                 possible = stimuli.pop(randomnumber)
-                #print('Possible')
+                print('Possible ' + str(possible))
                 #print(possible)
                 
                 #if we popped a value that is already double repeated, return list back to unpopped state
@@ -455,26 +455,53 @@ def shufflelist(inputlist):
                     #print([shuffled[-2][-1], shuffled[-1][-1]] )
                     #print([possible[-1]]*2)
                     #print([shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2)
-
                     #if [shuffled[-2][-1], shuffled[-1][-1]] == [possible[-1]]*2: #possible x repnum for var repeat
-                    if [shuffled[-2][2], shuffled[-1][2]] == [possible[-1]]*2: #possible x repnum for var repeat
-
+                    if [shuffled[-2][2], shuffled[-1][2]] == [possible[2]]*2: #possible x repnum for var repeat
                         stimuli = savelist.copy()
-                        #print('Already repeated, reset list')
-                        #print('Stimuli')
+                        print('Already repeated, reset list')
+                        print('Stimuli ' + str(stimuli))
                         #print(stimuli)
+                        print("")
+                        print("")
+                    elif ((possible[2] == 3) or (possible[2] == 4)) and (omission_counter == 3):
+                        print("possible last cond: " + str(possible[2]))
+                        print("(possible[2] == 3) " + str((possible[2] == 3)))
+                        print("(possible[2] == 4) " + str((possible[2] == 4)))
+                        print("((possible[2] == 3) or (possible[2] == 4)) " + str(((possible[2] == 3) or (possible[2] == 4))))
+                        print("omission_counter == 3 " + str(omission_counter == 3))
+                        print("((possible[2] == 3) or (possible[2] == 4)) and (omission_counter == 3) " + str(((possible[2] == 3) or (possible[2] == 4)) and (omission_counter == 3)))
+                        stimuli = savelist.copy()
+                        print('Too many omissions in a row, reset list')
+                        print('Stimuli ' + str(stimuli))
+                        #print(stimuli)
+                        print("")
+                        print("")
                     # else accept the new value and set test to 1    
                     else:
-                        #print('All good, append')
+                        print('All good, append')
+                        print("")
+                        print("")
                         shuffled.append(possible)
+                        #keep track of how many omissions we have so far, we cannot have more than 3
+                        if (shuffled[-1][2] == 3) or (shuffled[-1][2] == 4): #if last trial is omission
+                            omission_counter = omission_counter + 1 #update counter
+                            print("Omission Counter: " + str(omission_counter))
+                        else:
+                            omission_counter = 0 #reset counter
+                            print("Omission Counter: " + str(omission_counter))
                         test = 1
                 else:
-                    #print('All good, append')
+                    print('All good, append')
+                    print("")
+                    print("")
                     shuffled.append(possible)
+                    if (possible[2] == 3) or (possible[2] == 4):
+                        omission_counter = omission_counter + 1 #update counter
+                        print("Omission Counter: " + str(omission_counter))
+                    else:
+                        print("Omission Counter: " + str(omission_counter))
                     test = 1 #just set test to 1 and start a new iteration if only 1 number was in shuffled so far (so no duplicates to worry about)
-
             #print(' ')        
-
     # if length of stimuli is 0 then we finished going through the list and didn't break out of for loop
         if len(stimuli) == 0: #if last 1
             #shuffled.append(stimuli[0])

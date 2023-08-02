@@ -213,31 +213,31 @@ class TcsDevice:
             try:
                 temperatures[0] = float(datatemps[5:8]) / 10;
             except:
-                temperatures[0] = [-1]
+                temperatures[0] = float(-1)
                 print("Exception!")
                 print(temperatures)
             try:    
                 temperatures[1] = float(datatemps[9:12]) / 10;
             except:
-                temperatures[1] = [-1]
+                temperatures[1] = float(-1)
                 print("Exception!")
                 print(temperatures)
             try:
                 temperatures[2] = float(datatemps[13:16]) / 10;
             except:
-                temperatures[2] = [-1]    
+                temperatures[2] = float(-1)    
                 print("Exception!")
                 print(temperatures)
             try:    
                 temperatures[3] = float(datatemps[17:20]) / 10;
             except:
-                temperatures[3] = [-1] 
+                temperatures[3] = float(-1)
                 print("Exception!")
                 print(temperatures)
             try:    
                 temperatures[4] = float(datatemps[21:24]) / 10;
             except:
-                temperatures[3] = [-1]    
+                temperatures[3] = float(-1)  
                 print("Exception!")
                 print(temperatures)
         else:
