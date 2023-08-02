@@ -62,7 +62,6 @@ thermode = True
 #whichComputer = "LaserLab" #python2
 whichComputer = "MRI" #python3, run from project folder
 
-
 if whichComputer == "LaserLab":
     sys.path.insert(1, '/NOBACKUP2/Controlling_QST/')
     sys.path.insert(1, '/NOBACKUP2/Pred_spec/Ulrike_functions/')
@@ -70,7 +69,6 @@ if whichComputer == "LaserLab":
     if thermode:
         import QST_functions
     import ButtonBoxFunctions as bb
-    
 elif whichComputer == "MRI":
     sys.path.append('/data/pt_02650/fMRI/Experiment_scripts/')
     sys.path.append('/data/pt_02650/fMRI/Experiment_scripts/Ulrike_functions/')
@@ -83,12 +81,12 @@ else:
     directory="D:\\Yulia\\Psychopy Learning\\"
     
 #%%
-
 if trigger_mode:    
     # parallel port from scanner
     p_sc = parallel.Parallel(port = 0)
     p_sc.setDataDir(0)
     p_sc.setData(0)    
+    
     
 
 if brainAmp:
@@ -104,9 +102,6 @@ if brainAmp:
         while timer.getTime() <= 0.05:
             p_out.setData(int("00000001", 2))  # sets pin 2 high
         p_out.setData(0)
-        
-
-      
         
 # if parallel_port_mode:
 #     # initialize button boxes on port 0
@@ -128,7 +123,6 @@ else:
     bbox = [] #some functions ask for this so need to define even if blank                 
         
 #%%  
-
         
 # *******************************************************
 #                   Timing
@@ -531,7 +525,6 @@ for side in whichSide: #do it twice, for each arm/leg
     #                49.0, 49.0, 50.0,
     #                50.0, 51.0, 51.0]
     #            
-
     #    try more trials in painful range
         temperatures_calibration_real = [ # not including half degree increments
             42.0, 42.5, 43.0,
@@ -544,8 +537,7 @@ for side in whichSide: #do it twice, for each arm/leg
             51.5, 52.0, 52.0]
         
         
-
-      # # #try more trials in painful range
+        # # # #try more trials in painful range
         # temperatures_calibration_real = [ # not including half degree increments
         #     43.0, 43.5, 44.0,
         #     44.5, 45.0, 45.5,
@@ -555,7 +547,19 @@ for side in whichSide: #do it twice, for each arm/leg
         #     50.5, 51.0, 51.0, 51.5, 51.5,
         #     52.0, 52.0, 53.5,
         #     53.5, 54.0, 55.0]
-
+        
+        
+        # # #try more trials in even more painful range
+        # temperatures_calibration_real = [ # not including half degree increments
+        #     46.0, 46.5, 47.0,
+        #     47.5, 48.0, 48.5,
+        #     49.0, 49.5, 50.0,
+        #     50.5, 51.0, 51.5,
+        #     52.0, 52.5, 53.0, 53.0, 53.5,
+        #     53.5, 54.0, 54.0, 54.5, 54.5,
+        #     55.0, 55.0, 56.5,
+        #     56.5, 57.0, 58.0]
+        
         
         
         
@@ -563,7 +567,6 @@ for side in whichSide: #do it twice, for each arm/leg
         
         temperatures_calibration = temperatures_calibration_real
         #temperatures_calibration = temperatures_calibration_debugging  
-
         random.shuffle(temperatures_calibration)
             
         for i, eachcalibrationtemp in enumerate(temperatures_calibration):
@@ -577,7 +580,6 @@ for side in whichSide: #do it twice, for each arm/leg
                 requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp]
             else: # odd number trial
                 requiredtemperatures = [eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp, eachcalibrationtemp]
-
                     
             
             core.wait(delay_after_stim_calibration + random.uniform(-2, 2)) #wait the delay (probably around 8s, defined above, plus a random jitter,

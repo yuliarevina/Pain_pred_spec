@@ -137,7 +137,7 @@ baselineTemp = 31.0 # baseline/neutral temperature (for all 5 zones equally)
 durations = [1]*5 # stimulation durations in s for the 5 zones
 ramp_speed = [100]*5 # ramp up speed in °C/s for the 5 zones
 return_speed = [100]*5 # ramp down speed in °C/s for the 5 zones
-mytemperatures = [54.9]*5 # target temperatures in °C for the 5 zones
+mytemperatures = [48.0]*5 # target temperatures in °C for the 5 zones
 
 
 ## stimulus durations and parameters
@@ -311,7 +311,7 @@ def QuitExperiment():
 # **************************************************
 
 ## Data file
-filename="{}data_{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filename="{}data_{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H_%M_%S')) #for MS Windows
 if thisOS == "Linux":
     datafilewrite = open(filename, "w")
 else:
@@ -321,7 +321,7 @@ writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensi
 
 
 ## Log file (prints out key events, for timing etc)
-filenamelog="{}log{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filenamelog="{}log{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H_%M_%S')) #for MS Windows
 if thisOS == "Linux":
     logfilewrite = open(filenamelog, "w")
 else:
@@ -331,7 +331,7 @@ writerlog = csv.writer(logfilewrite, delimiter=";")
 
 
 ## Log file temperature
-filenamelogtemp="{}log{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filenamelogtemp="{}log{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H_%M_%S')) #for MS Windows
 if thisOS == "Linux":
     logtempfilewrite = open(filenamelogtemp, "w")
 else:
@@ -1471,6 +1471,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled_combined):
             
             #reset image positions
             myCue.pos = (0, 0) #center
+            myCueExp.pos = (0, 0)
             OtherImage1.pos = (0, 0)
             OtherImage2.pos = (0, 0)
             OtherImage1Exp.pos = (0, 0)
