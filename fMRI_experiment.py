@@ -13,13 +13,13 @@ import psychopy
 psychopy.prefs.hardware['audioLib'] = ['PTB', 'pyo','pygame']
 print(psychopy.prefs.hardware)
 
-#########
-# Stuff still to add
 
-# participant screen, add which hand is being tested and remove the "painful stimulus" instruction for the beginning of calib
-
-
-
+#Logging of the spyder console to a text file
+Logging_to_file = True
+if Logging_to_file:
+    logFile = "name.txt"
+    logoutput = open(logFile,'w')
+    sys.stdout = logoutput # lets me use print() statements
 
     
 thisOS = platform.system()
@@ -28,9 +28,6 @@ if thisOS == "Linux":
     slash = "/"
 else:   
     slash = "\\"
-
-
-#import ButtonBoxFunctions as bb
 
 
 # *********************************************************
@@ -51,6 +48,10 @@ brainAmp = False
 
 #thermode
 thermode = False
+
+#dual screen
+dual_screen = False #if True, create a second screen for the experimenter
+
 #whichComputer = "Home" #python3
 #whichComputer = "LaserLab" #python2
 whichComputer = "MRI" #python3, run from project folder
@@ -64,6 +65,7 @@ if whichComputer == "LaserLab":
     if parallel_port_mode: #doesn't work with trigger so don't use and set to false!    
         import ButtonBoxFunctions as bb
 elif whichComputer == "MRI":
+    sys.path.insert(1, '/data/pt_02650/fMRI/Experiment_scripts/Ulrike_functions/')
     sys.path.append('/data/pt_02650/fMRI/Experiment_scripts/')
     directory="/data/pt_02650/fMRI/Experiment_scripts/"
     if thermode:
@@ -116,34 +118,31 @@ if brainAmp:
 #timer for brainAmp
 timer = core.Clock()
 
-# how long should the TTL pulse be?
-thermode_trigger_dur = 0.01
-# How long is the stimulation programmed?
-#stim_time = 1.5
-
 ## SETUP thermode
 # settings
 baselineTemp = 31.0 # baseline/neutral temperature (for all 5 zones equally)
 durations = [1]*5 # stimulation durations in s for the 5 zones
 ramp_speed = [100]*5 # ramp up speed in °C/s for the 5 zones
 return_speed = [100]*5 # ramp down speed in °C/s for the 5 zones
-mytemperatures = [47]*5 # target temperatures in °C for the 5 zones
+mytemperatures = [54.9]*5 # target temperatures in °C for the 5 zones
 
 
 ## stimulus durations and parameters
 stim_dur_calibration = 1.5 #in seconds
 stim_dur_main_expt = 1 #in seconds
 cue_dur = 1 # s
-delay_after_stim_calibration = 3.5
-delay_after_stim_main_experiment = 3.0 #how long to wait after stim onset, so if stim is 1s long,
+#delay_after_stim_calibration = 3.5
+#delay_after_stim_main_experiment = 3.0 #how long to wait after stim onset, so if stim is 1s long,
 #then this give 2s afterwards before rating scale
-delay_before_stim_main_experiment = 5.0 #gives time for experimenter to start the stimulus (for pinpricks it's manually driven)
-stimonsetTimer = core.CountdownTimer(delay_before_stim_main_experiment)  # runs backwards
+#delay_before_stim_main_experiment = 5.0 #gives time for experimenter to start the stimulus (for pinpricks it's manually driven)
+#stimonsetTimer = core.CountdownTimer(delay_before_stim_main_experiment)  # runs backwards
 #stimonsetTimer.add(delay_before_stim_main_experiment)
 # how to use
 # while stimonsetTimer.getTime() > 0:
 ISI_time = 8.0 #seconds
 ISI_timer = core.CountdownTimer(ISI_time)
+Schluckpause_len = 10
+first_or_last_ISI = 10
 
 total_trial_len = 10.0 #seconds
 
@@ -167,14 +166,13 @@ myDlg.addText('Subject info')
 myDlg.addText('Output name e.g. Sub001_Block1_with_eyetrack or Sub002_Block2_rescan')
 myDlg.addField('Output_name:', "000")
 myDlg.addField('Sub_Number. MUST BE 3 digit code e.g. 001, 002, 013:', "000")
-myDlg.addField('Block_number:', choices=["1", "2"])
+myDlg.addField('Block_number:', choices=["1", "2", "3", "4"])
 myDlg.addField('Alter:', 21)
 myDlg.addField('Geschlecht:', choices=["M", "W", "D"])
-#myDlg.addText('Experiment Info')
-#myDlg.addField('Grating Ori:',45)
 myDlg.addField('Session:', choices=["Pain Location", "Pain Type",])
 myDlg.addField('Pain calibration?', choices=['Nein', 'Ja'])
 myDlg.addField('Cue order', choices=["1", "2", "3", "4", "5", "6"])
+myDlg.addField('Lots of catch trials?', choices=['Nein', 'Ja']) #for debugging put "Ja"
 ok_data = myDlg.show()  # show dialog and wait for OK or Cancel
 if myDlg.OK:  # or if ok_data is not None
     print(ok_data)
@@ -189,15 +187,12 @@ sex = ok_data[4]
 sessiontype = ok_data[5]
 paincalibrationYN = ok_data[6]
 cueorder = ok_data[7]
+manycatchtrials = ok_data[8]
 
 
 # Can manually enter some temperatures from a previous calibration file if needed
 # these are overwritten if calibration == Ja by the calibrated values later on in the script
 
-#temperatures_debug = [46.8, 47.4, 48.1, 48.8, 49] # calibrate to the person's own thresholds?
-#temperatures_debug = [42, 43, 44, 45, 46] # calibrate to the person's own thresholds?
-#temperatures_debug = [15, 25, 40, 45, 50] # calibrate to the person's own thresholds?
-#temperatures_debug = [40, 42, 44, 46, 48, 50, 52, 54, 56] # calibrate to the person's own thresholds?
 temperatures_debug = [48.5, 49.4, 50.3, 51.3, 52.2] # calibrate to the person's own thresholds?
 
 
@@ -217,7 +212,8 @@ def QuitExperiment():
         writerlog.writerow(["Cue order: ", cueorderinwords]) 
     logfilewrite.close()
     win.close()
-    winexp.close()
+    if dual_screen:
+        winexp.close()
     
     if eyetrack_mode:
         
@@ -236,58 +232,13 @@ def QuitExperiment():
         
         # close everything
         pylink.closeGraphics()
-       
+    
+    if Logging_to_file:    
+        logoutput.close()
+        sys.stdout = sys.__stdout__    
     core.quit()
 
-def RecordAnswer():
-    submittedanswer = False
-    #keypress = []
-    
-    if parallel_port_mode:
-        bbox.reset()
-        keypress = bbox.getButtons(timeStamped=False)
-    else:
-        keypress = event.getKeys(keyList=['left', 'right', 'escape']) #wait for Left Arrow or Right Arrow key
-        #submittedanswer = True
-    
-    if keypress:
-        if parallel_port_mode == True:
-            if keypress[0] == 1:
-                keypress[0] == "left" #recode to words
-                submittedanswer = True
-            elif keypress[0] == 2:
-                keypress[0] == "right" #recode to words
-                submittedanswer = True
-            elif keypress[0] == 3:
-                pass
-            elif keypress[0] == 4:    
-                pass
-            else:
-                print('Do you use the correct button box / keys?')
-        else:
-            if keypress[0] == 'left':
-                submittedanswer = True
-            elif keypress[0]  == 'right':
-                submittedanswer = True
-            elif keypress[0] == 'escape':
-                QuitExperiment()
-            elif keypress[0] == 'return':
-                pass
-            else:
-                print('Do you use the correct button box / keys?')
-    return submittedanswer, keypress          
 
-## Calibration file
-#filenamecalibration="{}/Ulrike functions/randomization_trials_session_2_calibration_short.csv".format(directory)
-
-## Calibration ratings data filename
-#filenamecalibrationdata = "{}/calibration_{}_{}_{}_{}_{}.csv".format(directory, sub, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S'))
-#if thisOS == "Linux":
-#    datafilewritecalib = open(filenamecalibrationdata, "w")
-#else:
-#    datafilewritecalib = open(filenamecalibrationdata, "w", newline='') # windows
-#writercalib = csv.writer(datafilewritecalib, delimiter=";")
-#writercalib.writerow(["Temp", "Rating"]) # data calibration file column headers
 
 
 # **************************************************
@@ -295,17 +246,17 @@ def RecordAnswer():
 # **************************************************
 
 ## Data file
-filename="{}data_{}_{}_{}_{}_{}.csv".format(directory, outputname, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filename="{}data_{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H_%M_%S')) #for MS Windows
 if thisOS == "Linux":
     datafilewrite = open(filename, "w")
 else:
     datafilewrite = open(filename, "w", newline='') # windows
 writer = csv.writer(datafilewrite, delimiter=";")
-writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity"]) # data file column headers
+writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity", "CatchTrial", "CuePosition", "SubjResponse", "CorrectAnswer?", "RT"]) # data file column headers
 
 
 ## Log file (prints out key events, for timing etc)
-filenamelog="{}log_{}_{}_{}_{}_{}.csv".format(directory, outputname, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filenamelog="{}log{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H_%M_%S')) #for MS Windows
 if thisOS == "Linux":
     logfilewrite = open(filenamelog, "w")
 else:
@@ -315,7 +266,7 @@ writerlog = csv.writer(logfilewrite, delimiter=";")
 
 
 ## Log file temperature
-filenamelogtemp="{}log_temp_{}_{}_{}_{}_{}.csv".format(directory, outputname, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H.%M.%S')) #for MS Windows
+filenamelogtemp="{}log{}_{}_{}_Cue_{}_{}_{}_{}_{}.csv".format(directory, outputname, sub, blocknum, cueorder, sex, age, sessiontype, time.strftime('%Y-%m-%dT%H_%M_%S')) #for MS Windows
 if thisOS == "Linux":
     logtempfilewrite = open(filenamelogtemp, "w")
 else:
@@ -328,7 +279,7 @@ writerlogtemp = csv.writer(logtempfilewrite, delimiter=";")
 #blocknum = ok_data[2]
 #file string format = Sub001_Block1_pseudorandom.txt
 
-filename_ISI = "{}ISIs//Sub{}_Block{}_pseudorandom.txt".format(directory,sub,blocknum)
+filename_ISI = "{}ISIs//Sub{}_Block{}_pseudorandom_fMRI_96trials.txt".format(directory,sub,blocknum)
 ISI_vector = []
 try:
     with open(filename_ISI) as f:
@@ -345,25 +296,27 @@ except:
 # **************************************************
 
 # set screen properties
-scnWidth, scnHeight = (1920, 1080)
+#scnWidth, scnHeight = (1920, 1080)
 #scnWidth, scnHeight = (1080, 720)
+scnWidth, scnHeight = (900, 500)
 
 # define monitor
-mon = monitors.Monitor('laserlab', width=53.0, distance=57.0)
+#mon = monitors.Monitor('laserlab', width=53.0, distance=57.0)
+mon = monitors.Monitor('fMRI7T', width=53.0, distance=46.0)
 mon.setSizePix((scnWidth, scnHeight))
 
-
-# window for experimenter
-winexp = visual.Window(
-    (1500, 800), fullscr=False, screen=0,
-    allowGUI=False, allowStencil=False,
-    color=[0.404,0.404,0.404], colorSpace='rgb', waitBlanking = False)
-refreshratewinexp = winexp.getActualFrameRate(nIdentical=10, nMaxFrames=100, nWarmUpFrames=10, threshold=1)
-print(refreshratewinexp)
+if dual_screen:
+    # window for experimenter
+    winexp = visual.Window(
+        (1500, 800), fullscr=False, screen=1,
+        allowGUI=False, allowStencil=False,
+        color=[0.404,0.404,0.404], colorSpace='rgb', waitBlanking = False)
+    refreshratewinexp = winexp.getActualFrameRate(nIdentical=10, nMaxFrames=100, nWarmUpFrames=10, threshold=1)
+    print(refreshratewinexp)
 
 # window for subject
 win = visual.Window(
-    (scnWidth, scnHeight), fullscr=False, screen=1,
+    (scnWidth, scnHeight), fullscr=False, screen=0,
     allowGUI=False, allowStencil=False,
     monitor=mon, color=[0.404,0.404,0.404], colorSpace='rgb', waitBlanking = False)
 refreshratewin = win.getActualFrameRate(nIdentical=10, nMaxFrames=100, nWarmUpFrames=10, threshold=1)
@@ -399,17 +352,18 @@ if eyetrack_mode:
     # preparation
     # ==============================================================
     # Ensure that relative paths start from the same directory as this script
-    try: #python 2, unicode string
-        thisDir = os.path.dirname(os.path.abspath(__file__)).decode(sys.getfilesystemencoding())
-    except: #python 3, string already unicode so no decode function can be used (or needed)
-        thisDir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(thisDir)
+    # try: #python 2, unicode string
+    #     thisDir = os.path.dirname(os.path.abspath(__file__)).decode(sys.getfilesystemencoding())
+    # except: #python 3, string already unicode so no decode function can be used (or needed)
+    #     thisDir = os.path.dirname(os.path.abspath(__file__))
+    # os.chdir(thisDir)
     
     # Make data folder
-    if not os.path.isdir("data"):
-        os.makedirs("data")
+    if not os.path.isdir(directory + "data"):
+        os.makedirs(directory + "data")
     timestamp = data.getDateStr(format='%Y%m%d_%H%M')    
-    filenameeyetrack = thisDir + os.sep + 'data' + os.sep + 'eyetracking_%s' % (timestamp) + str(outputname) + str(sex) + str(age) + str(sessiontype) +'.edf'
+    #filenameeyetrack = thisDir + os.sep + 'data' + os.sep + 'eyetracking_%s' % (timestamp) + str(outputname) + str(sex) + str(age) + str(sessiontype) +'.edf'
+    filenameeyetrack = directory + 'data' + os.sep + 'eyetracking_%s' % (timestamp) + str(outputname) + str(sex) + str(age) + str(sessiontype) +'.edf'
 
     (tk, edf_running_name) = myFunctions.Eyetracking_calibration(filenameeyetrack, tk, win, winexp, scnWidth, scnHeight, dummyMode)        
     #tk.sendMessage('Start Rec 2') 
@@ -469,9 +423,20 @@ mechintensity_control = 128
 # 66 stims per block, randomized
 
 
-expectation_rate = 3 # 2wice as often as the other stim; 66.6666%
-trialspercondition_presented = 36
+expectation_rate = 3 # 3rice as often as the other stim; 75%
+trialspercondition_presented = 36 #36
 trialspercondition_omitted = numpy.int(trialspercondition_presented/expectation_rate)
+trialspercondition_neutral = 0 #0
+
+
+if manycatchtrials == "Ja":
+    nCatch_Stim = 10
+    nCatch_Omiss = 6
+    nCatch_Neutral = 10
+else:
+    nCatch_Stim = 3
+    nCatch_Omiss = 1
+    nCatch_Neutral = 0
 
 
 stimuli_list = []
@@ -518,22 +483,134 @@ if sessiontype == "Pain Type":
 elif sessiontype == "Pain Location": #same location but only thermal for now
     
         #for temperature_intensity in mytemperatures: #for each stimulus temperature
-            #the first 2 stims should always be stimulation    
-            stimuli_list.append([1, "LeftHigh_presented", 1])
-            stimuli_list.append([1, "RightHigh_presented", 2])
-        
-            for i in range(1, numpy.int(trialspercondition_presented)): #left high presented
-                stimuli_list.append([i+1, "LeftHigh_presented", 1])
+            #the first 6 stims should always be stimulation    
+            # put them into a pseudorandomized order
+            # stimuli_list.append([1, "LeftHigh_presented", 1, 0])
+            # stimuli_list.append([1, "RightHigh_presented", 2, 0])
+            # stimuli_list.append([2, "LeftHigh_presented", 1, 0])
+            # stimuli_list.append([2, "RightHigh_presented", 2, 0])
+            # stimuli_list.append([3, "LeftHigh_presented", 1, 0])
+            # stimuli_list.append([3, "RightHigh_presented", 2, 0])
+            
+            
+            
+            #PRESENTED
+            for i in range(0, numpy.int(trialspercondition_presented)): #left high presented
+                stimuli_list.append([i+1, "LeftHigh_presented", 1, 0])
                 #stimuli_list.append([i+1, "RightHigh_presented", 2]) #put left, right after one another because we need the 1st 2 trials to be 1 L and 1 R
+                
+                
+            # add catctrials
+            catchttrials_stim = numpy.zeros(trialspercondition_presented) #array of length of stimulation trials
+            catchttrials_stim[:nCatch_Stim] = numpy.ones(nCatch_Stim) #add catch trials, 1 = catch, 0 = no catch
+            numpy.random.shuffle(catchttrials_stim) #shuffle
+            #add to stimuli list
+            for j in range(trialspercondition_presented):
+                stimuli_list[j][3] = catchttrials_stim[j]
+                
+            stimuli_list_tmp = stimuli_list.copy() # make a temporary copy    
+            stimuli_list_tmp_first3LEFT = stimuli_list_tmp[:3].copy() #take first 3 elements
+            stimuli_list_tmp_restLEFT = stimuli_list_tmp[3:].copy() # take the remaining elements
+            
+            stimuli_list = [] #clear list so we can do the same for the right stims
                            
-            for i in range(1, numpy.int(trialspercondition_presented)): # right high presented
-                stimuli_list.append([i+1, "RightHigh_presented", 2])       
-                            
+            for i in range(0, numpy.int(trialspercondition_presented)): # right high presented
+                stimuli_list.append([i+1, "RightHigh_presented", 2, 0]) 
+                
+            # add catctrials
+            catchttrials_stim = numpy.zeros(trialspercondition_presented) #array of length of stimulation trials
+            catchttrials_stim[:nCatch_Stim] = numpy.ones(nCatch_Stim) #add catch trials, 1 = catch, 0 = no catch
+            numpy.random.shuffle(catchttrials_stim) #shuffle
+            #add to stimuli list
+            for j in range(trialspercondition_presented):
+                stimuli_list[j][3] = catchttrials_stim[j]
+                
+            stimuli_list_tmp = stimuli_list.copy() # make a temporary copy    
+            stimuli_list_tmp_first3RIGHT = stimuli_list_tmp[:3].copy() #take first 3 elements
+            stimuli_list_tmp_restRIGHT = stimuli_list_tmp[3:].copy() # take the remaining elements   
+            
+            stimuli_list = [] #clear list 
+            
+                        
+            #OMITTED                
             for i in range(numpy.int(trialspercondition_omitted)): # left high omitted
-                stimuli_list.append([i+1, "LeftHigh_omitted", 3])    
+                stimuli_list.append([i+1, "LeftHigh_omitted", 3, 0])    
+                
+            # we need to add catch trials here to all the _omitted trials
+            catchttrials_omiss = numpy.zeros(trialspercondition_omitted) #array of length of stimulation trials
+            catchttrials_omiss[:nCatch_Omiss] = numpy.ones(nCatch_Omiss) #add catch trials, 1 = catch, 0 = no catch
+            numpy.random.shuffle(catchttrials_omiss) #shuffle
+            
+            #add to stimuli list
+            for j in range(trialspercondition_omitted):
+                #print(j)
+                stimuli_list[j][3] = catchttrials_omiss[j]  #add to the end of the            stimulation trials    
+             
+            stimuli_list_tmp_omitLEFT    = stimuli_list.copy()
+            
+            stimuli_list = [] #clear list     
                 
             for i in range(numpy.int(trialspercondition_omitted)): # right high omitted
-                stimuli_list.append([i+1, "RightHigh_omitted", 4]) 
+                stimuli_list.append([i+1, "RightHigh_omitted", 4, 0]) 
+                
+            # we need to add catch trials here to all the _omitted trials
+            catchttrials_omiss = numpy.zeros(trialspercondition_omitted) #array of length of stimulation trials
+            catchttrials_omiss[:nCatch_Omiss] = numpy.ones(nCatch_Omiss) #add catch trials, 1 = catch, 0 = no catch
+            numpy.random.shuffle(catchttrials_omiss) #shuffle
+            
+            #add to stimuli list
+            for j in range(trialspercondition_omitted):
+                #print(j)
+                stimuli_list[j][3] = catchttrials_omiss[j]  #add to the end of the stimulation trials
+                
+            stimuli_list_tmp_omitRIGHT   = stimuli_list.copy()    
+            
+            stimuli_list = [] #clear list   
+            
+            # NEUTRAL
+            for i in range(numpy.int(trialspercondition_neutral)): # neutral cue that's never followed by pain
+                stimuli_list.append([i+1, "Neutral_cue", 5, 0])     
+                
+                
+            # we need to add catch trials here to all the _neutral trials
+            catchttrials_neut = numpy.zeros(trialspercondition_neutral) #array of length of stimulation trials
+            catchttrials_neut[:nCatch_Neutral] = numpy.ones(nCatch_Neutral) #add catch trials, 1 = catch, 0 = no catch
+            numpy.random.shuffle(catchttrials_neut) #shuffle
+            
+            #add to stimuli list
+            for j in range(trialspercondition_neutral):
+                stimuli_list[trialspercondition_presented*2 + trialspercondition_omitted*2 + j][3] = catchttrials_neut[j]  #add to the end of the omission trials  
+                
+                
+            stimuli_list_tmp_Neutral   = stimuli_list.copy()     
+            
+            
+            stimuli_list = [] #clear list  
+            
+            
+            
+            
+            ###### put everything together
+            #make a new list for 3 LEFT, 3 RIGHT trials, the first 6 trials should be these ones so we need to shuffle them separately
+            stimuli_list_first6 = [] 
+            stimuli_list_first6.extend(stimuli_list_tmp_first3LEFT)
+            stimuli_list_first6.extend(stimuli_list_tmp_first3RIGHT)
+             
+            #shuffle pseudorandomly
+            stimuli_list = myFunctions.shufflelist(stimuli_list_first6)     
+             
+             #add the remaining L and R trials
+            stimuli_list.extend(stimuli_list_tmp_restLEFT)
+            stimuli_list.extend(stimuli_list_tmp_restRIGHT)   
+                
+            stimuli_list.extend(stimuli_list_tmp_omitLEFT)
+            stimuli_list.extend(stimuli_list_tmp_omitRIGHT) 
+            
+            stimuli_list.extend(stimuli_list_tmp_Neutral) 
+            
+              
+                
+                
             
 #print(stimuli_list)
 #print(stimuli_list[0]) # [1, 'ThermalHigh_thermal']
@@ -559,69 +636,77 @@ Pic1 = visual.ImageStim(win, (directory+"image//bild4_masked_matched_bg_179.png"
 Pic2 = visual.ImageStim(win, (directory+"image//bild3_masked_matched_bg_179.png"), units="pix", size=(600, 600))
 Pic3 = visual.ImageStim(win, (directory+"image//bild2_masked_matched_bg_179.png"), units="pix", size=(600, 600))
 # same for experimenters screen
-Pic1exp = visual.ImageStim(winexp, (directory+"image//bild4_masked_matched_bg_179.png"), units="pix", size=(600, 600))
-Pic2exp = visual.ImageStim(winexp, (directory+"image//bild3_masked_matched_bg_179.png"), units="pix", size=(600, 600))
-Pic3exp = visual.ImageStim(winexp, (directory+"image//bild2_masked_matched_bg_179.png"), units="pix", size=(600, 600))
+if dual_screen:
+    Pic1exp = visual.ImageStim(winexp, (directory+"image//bild4_masked_matched_bg_179.png"), units="pix", size=(600, 600))
+    Pic2exp = visual.ImageStim(winexp, (directory+"image//bild3_masked_matched_bg_179.png"), units="pix", size=(600, 600))
+    Pic3exp = visual.ImageStim(winexp, (directory+"image//bild2_masked_matched_bg_179.png"), units="pix", size=(600, 600))
 
 
 
 if cueorder == "1":
     Cue1 = Pic1
     Cue2 = Pic2
-    #Cue3 = Pic3
-    Cue1exp = Pic1exp
-    Cue2exp = Pic2exp
-    #Cue3exp = Pic3exp
-    cueorderinwords = "1: Left: Bild4, Right: Bild3"
+    Cue3 = Pic3
+    if dual_screen:
+        Cue1exp = Pic1exp
+        Cue2exp = Pic2exp
+        Cue3exp = Pic3exp
+    cueorderinwords = "1: Left: Bild4, Right: Bild3, Neutral: Bild2"
 elif cueorder == "2":
     Cue1 = Pic1
     Cue2 = Pic3
-    #Cue3 = Pic2 
-    Cue1exp = Pic1exp
-    Cue2exp = Pic3exp
-    #Cue3exp = Pic2exp
-    cueorderinwords = "2: Left: Bild4, Right: Bild2"
+    Cue3 = Pic2 
+    if dual_screen:
+        Cue1exp = Pic1exp
+        Cue2exp = Pic3exp
+        Cue3exp = Pic2exp
+    cueorderinwords = "2: Left: Bild4, Right: Bild2, Neutral: Bild3"
 elif cueorder == "3":
     Cue1 = Pic2
     Cue2 = Pic1
-    #Cue3 = Pic3
-    Cue1exp = Pic2exp
-    Cue2exp = Pic1exp
-    #Cue3exp = Pic3exp
-    cueorderinwords = "3: Left: Bild3, Right: Bild4"
+    Cue3 = Pic3
+    if dual_screen:
+        Cue1exp = Pic2exp
+        Cue2exp = Pic1exp
+        Cue3exp = Pic3exp
+    cueorderinwords = "3: Left: Bild3, Right: Bild4, Neutral: Bild2"
 elif cueorder == "4":
     Cue1 = Pic2
     Cue2 = Pic3
-    #Cue3 = Pic1
-    Cue1exp = Pic2exp
-    Cue2exp = Pic3exp
-    #Cue3exp = Pic1exp
-    cueorderinwords = "4: Left: Bild3, Right: Bild2"
+    Cue3 = Pic1
+    if dual_screen:
+        Cue1exp = Pic2exp
+        Cue2exp = Pic3exp
+        Cue3exp = Pic1exp
+    cueorderinwords = "4: Left: Bild3, Right: Bild2, Neutral: Bild4"
 elif cueorder == "5":
     Cue1 = Pic3
     Cue2 = Pic1
-    #Cue3 = Pic2
-    Cue1exp = Pic3exp
-    Cue2exp = Pic1exp
-    #Cue3exp = Pic2exp
-    cueorderinwords = "5: Left: Bild2, Right: Bild4"
+    Cue3 = Pic2
+    if dual_screen:
+        Cue1exp = Pic3exp
+        Cue2exp = Pic1exp
+        Cue3exp = Pic2exp
+    cueorderinwords = "5: Left: Bild2, Right: Bild4, Neutral: Bild3"
 elif cueorder == "6":
     Cue1 = Pic3
     Cue2 = Pic2
-    #Cue3 = Pic1
-    Cue1exp = Pic3exp
-    Cue2exp = Pic2exp
-    #Cue3exp = Pic1exp
-    cueorderinwords = "6: Left: Bild2, Right: Bild3"
+    Cue3 = Pic1
+    if dual_screen:
+        Cue1exp = Pic3exp
+        Cue2exp = Pic2exp
+        Cue3exp = Pic1exp
+    cueorderinwords = "6: Left: Bild2, Right: Bild3, Neutral: Bild4"
 
 
 CueHighThermal_or_left = Cue1
 CueHighMechano_or_right = Cue2
-#CueNoExpect = Cue3
+CueNoExpect = Cue3
+if dual_screen:
 # same for experimenters screen
-CueHighThermal_or_left_Exp = Cue1exp
-CueHighMechano_or_right_Exp = Cue2exp
-#CueNoExpectExp = Cue3exp
+    CueHighThermal_or_left_Exp = Cue1exp
+    CueHighMechano_or_right_Exp = Cue2exp
+    CueNoExpectExp = Cue3exp
 
 print("Cue order: " + cueorderinwords + "\n")
 
@@ -642,24 +727,26 @@ print("Cue order: " + cueorderinwords + "\n")
 
 
 
-first_2_stims = stimuli_list[0:2] #chop off the 1st 2 stims as these should not be shuffled. We always present
-# real pain in the first 2 trials
-stimuli_list_shuffled = stimuli_list[2:] #shuffle the rest of the list
+first_6_stims = stimuli_list[0:6] #chop off the 1st 2 stims as these should not be shuffled. We always present
+# real pain in the first 6 trials
+stimuli_list_shuffled = stimuli_list[6:] #shuffle the rest of the list
 
 list_ok = False
 while not list_ok:
     shuffledlist = myFunctions.shufflelist(stimuli_list_shuffled) 
-    stimuli_list_shuffled = first_2_stims + shuffledlist # combine
-    el_2 = stimuli_list_shuffled[1][2]
-    el_3 = stimuli_list_shuffled[2][2]
-    el_4 = stimuli_list_shuffled[3][2]
-    print("2nd to 4th elem " + str([el_2, el_3, el_4]))
-    if set([el_2, el_3, el_4]) == 1: #if 2nd, 3rd and 4th element are the same
+    stimuli_list_shuffled_combined = first_6_stims + shuffledlist # combine
+    el_6 = stimuli_list_shuffled_combined[5][2]
+    el_7 = stimuli_list_shuffled_combined[6][2]
+    el_8 = stimuli_list_shuffled_combined[7][2]
+    print("6th to 8th elem " + str([el_6, el_7, el_8]))
+    if len(set([el_6, el_7, el_8])) == 1: #if 2nd, 3rd and 4th element are the same
         #bad list
         print("bad stimuli list, try again")
+        print(str(len(stimuli_list_shuffled_combined)))
         list_ok = False
     else:
         print("good stimuli list")
+        print(str(len(stimuli_list_shuffled_combined)))
         list_ok = True
 
 
@@ -669,8 +756,8 @@ while not list_ok:
 
 
 #for recording temperature during each trial
-temperatures_in_trial_left = numpy.zeros((250, 5, len(stimuli_list_shuffled)))
-temperatures_in_trial_right = numpy.zeros((250, 5, len(stimuli_list_shuffled)))
+temperatures_in_trial_left = numpy.zeros((250, 5, len(stimuli_list_shuffled_combined)))
+temperatures_in_trial_right = numpy.zeros((250, 5, len(stimuli_list_shuffled_combined)))
 
 
 
@@ -681,19 +768,22 @@ whichZones = [1, 4]
 myPainType = []
 myPainLocation = []
 
-myFunctions.showText(winexp, "Press Space to start", (1, 1, 1))
+if dual_screen:
+    myFunctions.showText(winexp, "Press Space to start", (1, 1, 1))
+    winexp.flip()
 myFunctions.showText(win, "Waiting for experimenter", (1, 1, 1))
 win.flip()
-winexp.flip()
+
 writerlog.writerow(["Waiting for Experimenter", core.getTime()])
 keypress = event.waitKeys(float('inf'),keyList=['space']) #wait for space
 
 
-
-myFunctions.showText(winexp, "Waiting for scanner trigger", (1, 1, 1))
+if dual_screen:
+    myFunctions.showText(winexp, "Waiting for scanner trigger", (1, 1, 1))
+    winexp.flip()
 myFunctions.showText(win, "Waiting for scanner trigger", (1, 1, 1))
 win.flip()
-winexp.flip()
+
 
 writerlog.writerow(["Start of Experiment // Trigger Detected", "Absolute t", "t since triggertime", "t since trial onset"])
 
@@ -749,12 +839,15 @@ event.clearEvents()
 # total_trial_len - 1s of cue - 1s of cue + pain
 
 myFunctions.showFix(win, "+", (1, 1, 1))
-#myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
-myFunctions.showDebugText(winexp, "Initial baseline",  (0, -200),whichComputer)
-#myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
-myFunctions.showFix(winexp, "ISI", (1, 1, 1))
+
+if dual_screen:
+    #myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
+    myFunctions.showDebugText(winexp, "Initial baseline",  (0, -200),whichComputer)
+    #myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
+    myFunctions.showFix(winexp, "ISI", (1, 1, 1))
+    winexp.flip()
 win.flip()
-winexp.flip()
+
 if eyetrack_mode:
     tk.sendMessage("After very 1st ISI onset")
 
@@ -770,18 +863,28 @@ print("Start of 1st ISI")
 print("Total trial len: " + str(total_trial_len))
 print("Cue dur + stim dur " + str(cue_dur + stim_dur_main_expt) )
 print("Core.getTime - trigger " + str(core.getTime() - triggertime))
-print("ISI length: " + str(total_trial_len - (cue_dur + stim_dur_main_expt) - (core.getTime() - triggertime)))
-core.wait(total_trial_len - (cue_dur + stim_dur_main_expt) - (core.getTime() - triggertime)) # trial duration, minus cue dur, minus stim dur, minus time already elapsed since trigger (a few ms usually)
+
+#print("ISI length: " + str(total_trial_len - (cue_dur + stim_dur_main_expt) - (core.getTime() - triggertime)))
+#core.wait(total_trial_len - (cue_dur + stim_dur_main_expt) - (core.getTime() - triggertime)) # trial duration, minus cue dur, minus stim dur, minus time already elapsed since trigger (a few ms usually)
+print("First ISI length: " + str(first_or_last_ISI) + "s")
+core.wait(first_or_last_ISI)
 
 print("Offset of very 1st ISI:   " + str(core.getTime() - triggertime))
 
 nSchluck = 0 #count the number of swallowing breaks 
+presentSchluck = True #whether to have a swallowing break
+catchTrial = False
 
 ################################################################################################################
 #for each trial
 ################################################################################################################
-for trial, stimulus in enumerate(stimuli_list_shuffled):
+for trial, stimulus in enumerate(stimuli_list_shuffled_combined):
     print("Trial " + str(trial+ 1))
+    
+    if stimulus[3] == 1:
+        catchTrial = True
+    else:
+        catchTrial = False
     
     trial_start_time = core.getTime()
     print ("Trial Start Time:  " + str(trial_start_time))
@@ -791,57 +894,67 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     # ISI is different on each trial so total length will not be 10 s always (but will be on average)
     
     thisISI = float(ISI_vector[trial])
-    print("This ISI: " + str(ISI_vector[0]))
+    print("This ISI: " + str(thisISI))
     total_trial_len = cue_dur + stim_dur_main_expt + thisISI
     print("Current total trial length: " + str(total_trial_len ))
     
     #we need to count how much ISI time has elapsed already
     totalISIelapsedsofar = 0
-    for i in range(trial):
+    for i in range(trial): #last i is trial - 1 so for 96 trials, last trial is trial 95 in python, so last i = 94 here. We add up everything until and including the penultimate trial
         totalISIelapsedsofar = totalISIelapsedsofar + float(ISI_vector[i]) #just add everything up so far
     
     ################################
     ## Swallowing break every 12 trials
     ################################
     
-    if (trial != 0) & (trial % 12 == 0): #every 12 trials, at the *start* of the 13th trial. *After* 12 trials are completed. Trial 12 in python is Trial 13 in human 
-        counter = 10
-        
-        textstring = "Schluckpause " + str(counter)
-        myFunctions.showText(win, textstring, (1, 1, 1))
-        myFunctions.showText(winexp, textstring, (1, 1, 1))
-        win.flip()
-        winexp.flip()
-        start_schluckpause = core.getTime()
-        #work out the duration of the swallowing break given delays upstream
-        
-        dur_schluckpause = 10 - (start_schluckpause - (triggertime + (cue_dur + stim_dur_main_expt) * trial + totalISIelapsedsofar + ISI_time + 10 * nSchluck)) # will depend on delays upstream. So would be slightly less than 10s
-        schluckpauseCounter = core.CountdownTimer(dur_schluckpause)
-        schluckpauseCounter.reset()
-        if eyetrack_mode:
-            tk.sendMessage("Swallowing break")
-        while schluckpauseCounter.getTime() > 0:
-            counter = numpy.floor(schluckpauseCounter.getTime()) + 1# get time in s
-                       
-            textstring = "Schluckpause " + str(counter)
+    if presentSchluck: #if swallowing break is required
+        if (trial != 0) & (trial % 12 == 0): #every 12 trials, at the *start* of the 13th trial. *After* 12 trials are completed. Trial 12 in python is Trial 13 in human 
+            counter = 10
             
+            textstring = "Blinzelpause " + str(counter)
             myFunctions.showText(win, textstring, (1, 1, 1))
-            myFunctions.showText(winexp, textstring, (1, 1, 1))
+            if dual_screen:
+                myFunctions.showText(winexp, textstring, (1, 1, 1))
+                winexp.flip()
             win.flip()
-            winexp.flip()
-        
-        #writerlog.writerow(["Trial " + str(trial+1) + " schluckpause start ", start_schluckpause, start_schluckpause-triggertime, start_schluckpause - trial_start_time]) 
-        #core.wait(10 - (start_schluckpause - (triggertime + (trial) * 10 + ISI_time)))
-        end_schluckpause = core.getTime()
-        #writerlog.writerow(["Trial " + str(trial+1) + " schluckpause end ", end_schluckpause, end_schluckpause-triggertime, end_schluckpause - trial_start_time]) 
-        print("Schluckpause at the start of Trial " + str(trial + 1) + " " + str(end_schluckpause - start_schluckpause) + " s long")
-        nSchluck = nSchluck + 1 #update swallowing counter
+           
+            start_schluckpause = core.getTime()
+            #work out the duration of the swallowing break given delays upstream
+            #schluckpause dur = 0s for the behavioural
+            dur_schluckpause = Schluckpause_len - (start_schluckpause - (triggertime + (cue_dur + stim_dur_main_expt) * trial + totalISIelapsedsofar + first_or_last_ISI + Schluckpause_len * nSchluck)) # will depend on delays upstream. So would be slightly less than 10s
+            schluckpauseCounter = core.CountdownTimer(dur_schluckpause)
+            schluckpauseCounter.reset()
+            if eyetrack_mode:
+                tk.sendMessage("Swallowing break")
+            while schluckpauseCounter.getTime() > 0:
+                counter = numpy.floor(schluckpauseCounter.getTime()) + 1# get time in s
+                           
+                textstring = "Blinzelpause " + str(counter)
+                
+                myFunctions.showText(win, textstring, (1, 1, 1))
+                if dual_screen:
+                    myFunctions.showText(winexp, textstring, (1, 1, 1))
+                    winexp.flip()
+                win.flip()
+                
+            
+            #writerlog.writerow(["Trial " + str(trial+1) + " schluckpause start ", start_schluckpause, start_schluckpause-triggertime, start_schluckpause - trial_start_time]) 
+            #core.wait(10 - (start_schluckpause - (triggertime + (trial) * 10 + ISI_time)))
+            end_schluckpause = core.getTime()
+            #writerlog.writerow(["Trial " + str(trial+1) + " schluckpause end ", end_schluckpause, end_schluckpause-triggertime, end_schluckpause - trial_start_time]) 
+            print("Schluckpause at the start of Trial " + str(trial + 1) + " " + str(end_schluckpause - start_schluckpause) + " s long")
+            nSchluck = nSchluck + 1 #update swallowing counter
     #Work out which type of trial this is
     trial_type = stimulus[2] # give a number 1 to 6
        
     if trial_type == 1: #ThermalHigh_thermal
         myCue = CueHighThermal_or_left #or LeftHigh
-        myCueExp = CueHighThermal_or_left_Exp
+        OtherImage1 = CueHighMechano_or_right #the other images not used as cue on this trial
+        OtherImage2 = CueNoExpect
+        if dual_screen:
+            myCueExp = CueHighThermal_or_left_Exp
+            OtherImage1Exp = CueHighMechano_or_right_Exp
+            OtherImage2Exp = CueNoExpectExp
         if sessiontype == "Pain Type":
             myPainType = "thermal"
         elif sessiontype == "Pain Location":
@@ -850,7 +963,12 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             omissiontrial = False
     elif trial_type == 3: #ThermalHigh_mechano
         myCue = CueHighThermal_or_left  #or LeftHigh
-        myCueExp = CueHighThermal_or_left_Exp
+        OtherImage1 = CueHighMechano_or_right #the other images not used as cue on this trial
+        OtherImage2 = CueNoExpect
+        if dual_screen:
+            myCueExp = CueHighThermal_or_left_Exp
+            OtherImage1Exp = CueHighMechano_or_right_Exp
+            OtherImage2Exp = CueNoExpectExp
         if sessiontype == "Pain Type":
             myPainType = "mechano"
         elif sessiontype == "Pain Location":
@@ -859,7 +977,12 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             omissiontrial = True
     elif trial_type == 2: #MechanoHigh_mechano
         myCue = CueHighMechano_or_right  #or RightHigh
-        myCueExp = CueHighMechano_or_right_Exp
+        OtherImage1 = CueHighThermal_or_left #the other images not used as cue on this trial
+        OtherImage2 = CueNoExpect
+        if dual_screen:
+            myCueExp = CueHighMechano_or_right_Exp
+            OtherImage1Exp = CueHighThermal_or_left_Exp
+            OtherImage2Exp = CueNoExpectExp
         if sessiontype == "Pain Type":
             myPainType = "mechano"
         elif sessiontype == "Pain Location":
@@ -868,21 +991,32 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
             omissiontrial = False
     elif trial_type == 4: #MechanoHigh_thermal
         myCue = CueHighMechano_or_right #or RightHigh
-        myCueExp = CueHighMechano_or_right_Exp
+        OtherImage1 = CueHighThermal_or_left #the other images not used as cue on this trial
+        OtherImage2 = CueNoExpect
+        if dual_screen:
+            myCueExp = CueHighMechano_or_right_Exp
+            OtherImage1Exp = CueHighThermal_or_left_Exp
+            OtherImage2Exp = CueNoExpectExp
         if sessiontype == "Pain Type":
             myPainType = "thermal"
         elif sessiontype == "Pain Location":
             myPainLocation = "right"
             myPainType = "thermal"
             omissiontrial = True
-#    elif trial_type == 5: #Noexpect_thermal
-#        myCue = CueNoExpect
-#        myCueExp = CueNoExpectExp
-#        if sessiontype == "Pain Type":
-#            myPainType = "thermal"
-#        elif sessiontype == "Pain Location":
-#            myPainLocation = "left"
-#            myPainType = "thermal"
+    elif trial_type == 5: #Noexpect
+        myCue = CueNoExpect
+        OtherImage1 = CueHighThermal_or_left #the other images not used as cue on this trial
+        OtherImage2 = CueHighMechano_or_right
+        if dual_screen:
+            myCueExp = CueNoExpectExp
+            OtherImage1Exp = CueHighThermal_or_left_Exp
+            OtherImage2Exp = CueHighMechano_or_right_Exp
+        if sessiontype == "Pain Type":
+            myPainType = "thermal"
+        elif sessiontype == "Pain Location":
+            myPainLocation = "left" #just a placeholder, we won't present anything
+            myPainType = "thermal"
+            omissiontrial = True #we don't need to present stimulus in neutral trials
 #    elif trial_type == 6: #Noexpect_mechano
 #        myCue = CueNoExpect
 #        myCueExp = CueNoExpectExp
@@ -892,6 +1026,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
 #            myPainLocation = "right"
 #            myPainType = "thermal"
     
+    print("Trial type: " + str(trial_type))
     print("Pain type: " + myPainType)
     if sessiontype == "Pain Location":
         print("Pain location: " + myPainLocation)
@@ -942,13 +1077,14 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     
     
     # present text to the experimenter
-    currtrialstring = str("Pain Type: " + str(myPainType) + "\nPain Location: " + str(myPainLocation) + "\Temp: " +
+    currtrialstring = str("Trial: " + str(trial+1) + "\nTrial Type: " + str(trial_type) + "\nPain Type: " + str(myPainType) + "\nPain Location: " + str(myPainLocation) + "\Temp: " +
                        str(myPainControlIntensity) + "\nOmission: " + str(omissiontrial))
-    myCueExp.draw()
-    myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
-    myFunctions.showDebugText(winexp, "Stimulus: " + str(stimulus[1]),  (0, -200),whichComputer) 
-    myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
-  
+    if dual_screen:
+        myCueExp.draw()
+        myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
+        myFunctions.showDebugText(winexp, "Stimulus: " + str(stimulus[1]),  (0, -200),whichComputer) 
+        myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
+        winexp.flip()
     
 #    # timing stuff
 #    # only need to print time stamp on the first frame of something
@@ -960,7 +1096,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
 #    timestampprinted_stim_onset = False
 
     
-    winexp.flip()
+    
     #keypress = event.waitKeys(float('inf'),keyList=['space']) #wait for space
     # Wait for space again once the experimenter knows which stimulation to prepare
     # important to prepare because pinpricks are not automatically administered
@@ -1061,7 +1197,8 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     # STIM
     myCue.draw() #1st stim
     #myCueExp.draw()
-    myFunctions.showFix(winexp, "!!!", (1, 1, 1))
+    if dual_screen:
+        myFunctions.showFix(winexp, "!!!", (1, 1, 1))
 #    if timestampprinted_stim_onset == False:  # if not False
 #                    print(("After stim onset requested ", core.getTime() - getready))
 #                    writerlog.writerow(["!!! Stim onset request", core.getTime(), core.getTime()-t0, core.getTime()-getready])
@@ -1110,7 +1247,7 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
                         print("After heat onset requested " + str(heat_onset_request_time - triggertime) + " s after trigger and "+ str(heat_onset_request_time - trial_start_time) + " s after trial onset")
                         #writerlog.writerow(["Trial " + str(trial + 1) + "Heat onset requested", heat_onset_request_time, heat_onset_request_time-triggertime, heat_onset_request_time-trial_start_time])
                         if eyetrack_mode:
-                            tk.sendMessage("Trial " + str(trial + 1) + "Heat onset requested")
+                            tk.sendMessage("Trial " + str(trial + 1) + " Heat onset requested")
                         
                     elif myPainLocation == "right":
                         if thermode:
@@ -1121,13 +1258,13 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
                         print("After heat onset requested " + str(heat_onset_request_time - triggertime) + " s after trigger and "+ str(heat_onset_request_time - trial_start_time) + " s after trial onset")
                         #writerlog.writerow(["Trial " + str(trial + 1) + "Heat onset requested", heat_onset_request_time, heat_onset_request_time-triggertime, heat_onset_request_time-trial_start_time])
                         if eyetrack_mode:
-                            tk.sendMessage("Trial " + str(trial + 1) + "Heat onset requested")
+                            tk.sendMessage("Trial " + str(trial + 1) + " Heat onset requested")
                 else: #omission trial, don't present heat
                      omission_onset_request_time = core.getTime()
                      print(("After omission onset requested "+ str(omission_onset_request_time - triggertime) + " s after trigger and " + str(omission_onset_request_time - trial_start_time) + " s after trial onset"))
                      #writerlog.writerow(["Trial " + str(trial + 1) + " Omission onset requested", omission_onset_request_time, omission_onset_request_time-triggertime, omission_onset_request_time-trial_start_time])
                      if eyetrack_mode:
-                        tk.sendMessage("Trial " + str(trial + 1) + "Omission onset request")
+                        tk.sendMessage("Trial " + str(trial + 1) + " Omission onset request")
                 #core.wait(3.0)
            
                        
@@ -1164,7 +1301,8 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     
    
     win.flip()
-    winexp.flip()
+    if dual_screen:
+        winexp.flip()
     #print(("After winflip ", core.getTime() - getready))
     #writerlog.writerow(["Winflip after stimulus onset request", core.getTime(), core.getTime()-t0, core.getTime()-getready])
     if eyetrack_mode:
@@ -1199,18 +1337,25 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     #     ISI    
     # =============================================================================
     myFunctions.showFix(win, "+", (1, 1, 1))
-    myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
-    #myFunctions.showDebugText(winexp, "Stimulus: " + str(stimulus[1]),  (0, -200),whichComputer) 
-    #myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
-    myFunctions.showFix(winexp, "ISI", (1, 1, 1))
+    if dual_screen:
+        myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
+        #myFunctions.showDebugText(winexp, "Stimulus: " + str(stimulus[1]),  (0, -200),whichComputer) 
+        #myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
+        myFunctions.showFix(winexp, "ISI", (1, 1, 1))
+        winexp.flip()
+    
     win.flip()
-    winexp.flip()
+    
     #calculate how much time is left after stimulation. Trial should be 10s with 9s ISI
     onset_of_ISI = core.getTime()
     print("Onset of ISI X s after trial start:   " + str(onset_of_ISI - trial_start_time))
     #print("Onset of ISI X s after trial start:   " + str(onset_of_ISI - (triggertime + (trial+1) * 10 + ISI_time)))
     # remember total_trial_len already includes the current trial's requested ISI (so total_trial_len is different on each trial)
-    print("ISI should be " + str(total_trial_len - (onset_of_ISI - (triggertime + (cue_dur + stim_dur_main_expt) * trial + totalISIelapsedsofar + ISI_time + 10 * nSchluck))) + " s long...")
+    # formula = length - stim - delay
+    # delay = time_now - time_it_should_be
+    #time_it_should_be = trigger + 2 x NTrials + totalISIs + FirstISI + NSchluck
+    # putting it all together = length - (time_now - (trigger + 2 x NTrials + totalISIs + FirstISI + NSchluck))
+    print("ISI should be " + str(total_trial_len - (cue_dur + stim_dur_main_expt) - (onset_of_ISI - (triggertime + (cue_dur + stim_dur_main_expt) * (trial+1) + totalISIelapsedsofar + first_or_last_ISI + Schluckpause_len * nSchluck))) + " s long...")
   
     if eyetrack_mode:
         tk.sendMessage("After ISI onset")
@@ -1242,19 +1387,183 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     
     end_of_temp_rec = core.getTime()
     print("End of temp rec X s after trial start:   " + str(end_of_temp_rec - trial_start_time))
-    remainingISI = total_trial_len - (end_of_temp_rec - (triggertime + (cue_dur + stim_dur_main_expt) * trial + totalISIelapsedsofar + ISI_time + 10 * nSchluck))
+    remainingISI = total_trial_len - (cue_dur + stim_dur_main_expt) - (end_of_temp_rec - (triggertime + (cue_dur + stim_dur_main_expt) * (trial+1) + totalISIelapsedsofar + first_or_last_ISI + Schluckpause_len * nSchluck))
 
     print("Rest of ISI should be " + str(remainingISI) + "s long...")
-    core.wait(remainingISI) #pinned to the trigger start rather than trial start
+    #core.wait(remainingISI) #pinned to the trigger start rather than trial start
+    
+    #catch trial here
+    whichImage_toshow = numpy.random.permutation(2)
+    side_of_cue = numpy.random.permutation(2)
+    corrAns = ["none"]
+    submittedanswer = False
+    keypress = ["NaN"]
+    RT = "NaN"
+    response = "NaN"
+    start_catch_trial = core.getTime()
+    if catchTrial:
+        if eyetrack_mode:
+            tk.sendMessage("CatchTrial_Start")
+        while (core.getTime() - start_catch_trial) < remainingISI:
+            if (not submittedanswer) & ((core.getTime() - start_catch_trial) < 3): #if no answer yet and less than 3s have elapsed
+                if dual_screen:    
+                    myFunctions.showDebugText(winexp, "Which cue was presented?",  (0, -200),whichComputer)
+                
+                myFunctions.showDebugText(win, "Welches Bild\nhaben Sie\ngerade gesehen?",  (0, -200),whichComputer)
+                
+                print("Time now - start catch trial " + str((core.getTime() - start_catch_trial)))
+                if (whichImage_toshow[0] == 0) & (side_of_cue[0] == 0): #show distractor 1 on the right and cue on the left
+                    print("Which image to show " + str(whichImage_toshow))
+                    print("Side of cue " + str(side_of_cue)) 
+                    print("Which Image to show = 0? " + str(whichImage_toshow[0] == 0))
+                    print("Side of cue = 0? " + str(side_of_cue[0] == 0))
+                    print("Dist 1 right, cue left")    
+                    OtherImage1.pos = (500, 0) #right
+                    OtherImage1.draw()
+                    myCue.pos = (-500, 0) #left
+                    myCue.draw()
+                    if dual_screen:
+                        OtherImage1Exp.pos = (500, 0)
+                        myCueExp.pos = (-500, 0)
+                        myCueExp.draw()
+                        OtherImage1Exp.draw()
+                    corrAns = "left"
+                    print("Side of cue")
+                    print(str(side_of_cue[0]))
+                    print(corrAns + " should be correct answer" )
+                
+                elif (whichImage_toshow[0] == 1) & (side_of_cue[0] == 0): #show distractor 2 on the right and cue on the left
+                    print("Which image to show " + str(whichImage_toshow))
+                    print("Side of cue " + str(side_of_cue)) 
+                    print("Which Image to show = 1? " + str(whichImage_toshow[0] == 1))
+                    print("Side of cue = 0? " + str(side_of_cue[0] == 0))
+                    print("Dist 2 right, cue left")
+                    OtherImage2.pos = (500, 0) #right
+                    OtherImage2.draw()
+                    myCue.pos = (-500, 0) #left
+                    myCue.draw()
+                    if dual_screen:
+                        OtherImage2Exp.pos = (500, 0)
+                        OtherImage2Exp.draw()  
+                        myCueExp.pos = (-500, 0)
+                        myCueExp.draw()
+                    corrAns = "left"
+                    print("Side of cue")
+                    print(str(side_of_cue[0]))
+                    print(corrAns + " should be correct answer" )
+                
+                elif (whichImage_toshow[0] == 0) & (side_of_cue[0] == 1): #show distractor 1 on the left and cue on the right
+                    print("Which image to show " + str(whichImage_toshow))
+                    print("Side of cue " + str(side_of_cue)) 
+                    print("Which Image to show = 0? " + str(whichImage_toshow[0] == 0))
+                    print("Side of cue = 1? " + str(side_of_cue[0] == 1))
+                    print("Dist 1 left, cue right")
+                    OtherImage1.pos = (-500, 0) #left
+                    OtherImage1.draw()
+                    myCue.pos = (500, 0) #right
+                    myCue.draw()
+                    if dual_screen:
+                        OtherImage1Exp.pos = (-500, 0)
+                        OtherImage1Exp.draw()
+                        myCueExp.pos = (500, 0)
+                        myCueExp.draw()
+                    corrAns = "right"
+                    print("Side of cue")
+                    print(str(side_of_cue[0]))
+                    print(corrAns + " should be correct answer" )
+                
+                elif (whichImage_toshow[0] == 1) & (side_of_cue[0] == 1): #show distractor 2 on the left and cue on the right
+                    print("Which image to show " + str(whichImage_toshow))
+                    print("Side of cue " + str(side_of_cue)) 
+                    print("Which Image to show = 1? " + str(whichImage_toshow[0] == 1))
+                    print("Side of cue = 1? " + str(side_of_cue[0] ==1))
+                    print("Dist 2 LEFT, cue RIGHT")
+                    OtherImage2.pos = (-500, 0) #left
+                    OtherImage2.draw()
+                    myCue.pos = (500, 0) #right
+                    myCue.draw()
+                    if dual_screen:
+                        OtherImage2Exp.pos = (-500, 0)
+                        OtherImage2Exp.draw()
+                        myCueExp.pos = (500, 0)
+                        myCueExp.draw()
+                    corrAns = "right"
+                    print("Side of cue")
+                    print(str(side_of_cue[0]))
+                    print(corrAns + " should be correct answer" )
+                
+                win.flip()
+                if dual_screen:
+                    winexp.flip()
+                
+                #record answer
+                [submittedanswer, keypress, keypresskeyboard] = myFunctions.RecordAnswer(parallel_port_mode, bbox)
+                if submittedanswer:
+                    RTend = core.getTime()
+                    RT = (RTend-start_catch_trial)
+                    if eyetrack_mode:
+                        tk.sendMessage("Response_submitted")
+                    print("Submitted ans") 
+                    print(str(keypress[0]))
+                else:
+                    RTend = core.getTime() #record end of response period if answer is not given
+                    
+            else: #if submitted answer or already more than 3s for response, just show fix
+                 myFunctions.showFix(win, "+", (1, 1, 1))
+                 win.flip()
+                 if dual_screen:
+                     myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
+                     #myFunctions.showDebugText(winexp, "Stimulus: " + str(stimulus[1]),  (0, -200),whichComputer) 
+                     #myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
+                     myFunctions.showFix(winexp, "ISI", (1, 1, 1))
+                     winexp.flip()
+                 
+                 
+                 
+            
+            #reset image positions
+            myCue.pos = (0, 0) #center
+            OtherImage1.pos = (0, 0)
+            OtherImage2.pos = (0, 0)
+            if dual_screen:
+                myCueExp.pos = (0, 0) #center
+                OtherImage1Exp.pos = (0, 0)
+                OtherImage2Exp.pos = (0, 0)
+            
+            
+           
+                    
+        # work out if the response was correct            
+        if keypress:
+            if corrAns == "left": #if control left
+                if keypress[0] == 'left': #correct answer
+                        response = 1
+                elif keypress[0] == 'right': #wrong answer
+                        response = 0
+                else: #if something else has been pressed or no key is pressed
+                        response = 'NaN'
+            elif corrAns == "right": #if control right
+                if keypress[0] == 'right':   #correct answer
+                    response = 1
+                elif keypress[0] == 'left': #wrong answer
+                    response = 0
+                else: #if something else has been pressed or no key is pressed
+                    response = 'NaN'    
+        else:
+            keypress = ["NaN"]
+    else:
+        core.wait(remainingISI) #pinned to the trigger start rather than trial start
+    
     trial_end_time = core.getTime()
     print("Trial end: " + str(trial_end_time - trial_start_time))
     
     write_csv_start = core.getTime()
 
     writerlog.writerow(["Trial " + str(trial+1) + " start", trial_start_time, trial_start_time-triggertime, trial_start_time - trial_start_time]) 
-    if (trial != 0) & (trial % 12 == 0): #if schluckpause
-        writerlog.writerow(["Trial " + str(trial+1) + " schluckpause start ", start_schluckpause, start_schluckpause-triggertime, start_schluckpause - trial_start_time]) 
-        writerlog.writerow(["Trial " + str(trial+1) + " schluckpause end ", end_schluckpause, end_schluckpause-triggertime, end_schluckpause - trial_start_time]) 
+    if presentSchluck:
+        if (trial != 0) & (trial % 12 == 0): #if schluckpause
+            writerlog.writerow(["Trial " + str(trial+1) + " schluckpause start ", start_schluckpause, start_schluckpause-triggertime, start_schluckpause - trial_start_time]) 
+            writerlog.writerow(["Trial " + str(trial+1) + " schluckpause end ", end_schluckpause, end_schluckpause-triggertime, end_schluckpause - trial_start_time]) 
         
         
     writerlog.writerow(["Trial " + str(trial+1) + " Cue onset", cue_shown_time, cue_shown_time-triggertime, cue_shown_time - trial_start_time])    
@@ -1267,113 +1576,32 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     writerlog.writerow(["Trial " + str(trial + 1) + " After win flip + start of temp rec", start_of_1stTempRec, start_of_1stTempRec-triggertime, start_of_1stTempRec - trial_start_time])       
     writerlog.writerow(["Trial " + str(trial+1) + " Temp rec 1 ends", temp_rec_1_start, temp_rec_1_start - triggertime, temp_rec_1_start-trial_start_time])  
     writerlog.writerow(["Trial " + str(trial+1) + " ISI onset", onset_of_ISI, onset_of_ISI - triggertime, onset_of_ISI-trial_start_time]) 
+ 
     writerlog.writerow(["Trial " + str(trial+1) + " Temp rec 2 ends", temp_rec_2_end, temp_rec_2_end - triggertime, temp_rec_2_end-trial_start_time])    
+    if catchTrial:
+        writerlog.writerow(["Trial " + str(trial+1) + " CatchTrial", start_catch_trial, start_catch_trial-triggertime, start_catch_trial - trial_start_time]) 
+        writerlog.writerow(["Trial " + str(trial+1) + " Response end", RTend, RTend-triggertime, RTend - trial_start_time]) 
+                
     writerlog.writerow(["Trial " + str(trial+1) + " END", trial_end_time, trial_end_time - triggertime, trial_end_time - trial_start_time])
     print("write csv elapsed" + str(core.getTime() - write_csv_start))
     
-    writer.writerow([trial+1, stimulus[1], stimulus[2], myPainControlIntensity]) # data file column headers
+    writer.writerow([trial+1, stimulus[1], stimulus[2], myPainControlIntensity, catchTrial, side_of_cue[0], keypress[0], response, RT]) # data file column headers
 
     
     datafilewrite.flush() #force write to file, so we don't wait for file.close(). In case script crashes
     logfilewrite.flush()
+    if Logging_to_file:
+        logoutput.flush()
     print("")
     
     
-#    ############################
-#    ## Record response 
-#    ############################
-#    #core.wait(1.0)
-#    myFunctions.showText(win, 'welche Stimulus ist schmerzhafter?', (1, 1, 1))
-#    win.flip()
-#    RTstart = clock.getTime()
-#    print(("Response onset ", RTstart - getready))
-#    writerlog.writerow(["Response onset", core.getTime(), core.getTime()-t0, core.getTime()-getready])
-#    if eyetrack_mode:
-#        tk.sendMessage("Response onset")
-#   
-#    submittedanswer = False
-#    #keypress = []
-#    event.clearEvents()
-#    if thermode:    
-#        # Record temps for 1s
-#        start_time = time.time()
-#        recordDur = 1
-#        
-#        timesample = timesample + 1 # leave a gap between this recording and the previous one
-#        currtime = time.time()
-#        while (currtime - start_time) < recordDur:
-#            #temperatures_in_trial_left[timesample, zones, trial]
-#            [left_curr_temps, right_curr_temps] = QST_functions.RecordTemperature()
-#            temperatures_in_trial_left[timesample, :, trial] = left_curr_temps
-#            temperatures_in_trial_right[timesample, :, trial] = right_curr_temps
-#            timesample = timesample + 1
-#            currtime = time.time()
-#            if not submittedanswer:
-#                #print("Recording temp and ans")
-#                [submittedanswer, keypress] = RecordAnswer()
-#                if submittedanswer:
-#                    RTend = clock.getTime()
-#                    RT.append(RTend-RTstart)
-#        print("Temperature rec finished, elapsed time: " + str(currtime - start_time))
-#        while not submittedanswer: #in case the answer was not given during the temperature recording phase
-#                #print("Recording ans")  
-#                [submittedanswer, keypress] = RecordAnswer()
-#                if submittedanswer:
-#                    RTend = clock.getTime()
-#                    RT.append(RTend-RTstart)    
-#                            
-#    
-#    print("start: {}, end: {}, RT: {}".format(RTstart, RTend, RTend-RTstart))
-#    writerlog.writerow(["Keypress", core.getTime(), core.getTime()-t0, core.getTime()-getready])
-#    if eyetrack_mode:
-#        tk.sendMessage("Response offset")
-#    #feedback
-##    print('correct = {}'.format(corrrespstim[stimulus]))
-#    if keypress != None: #check if not empty
-#        print('key = {}'. format(keypress[0]))
-##        if corrrespstim[stimulus] == key[0]:
-##            myFunctions.showText(win, 'correct!', (1, 1, 1))
-##        elif corrrespstim[stimulus] != key:
-##            myFunctions.showText(win, 'incorrect!', (1, 1, 1))
-#        if keypress[0] == "escape":
-#            QuitExperiment()
-#    else: #key is empty, can't do key[0] subscript
-##        print('key = {}'. format(key))
-##        myFunctions.showText(win, 'Respond faster!', (1, 1, 1))
-#        keypress = ['None']
+
+
+
         
     
-#    win.flip()
-#    winexp.flip()
-#    myFunctions.showText(win, 'Waiting for experimenter', (1, 1, 1))
-#    myFunctions.showText(winexp, 'Waiting for space key...', (1, 1, 1))
-#    win.flip()
-#    winexp.flip()
-#    writerlog.writerow(["Waiting for space + next trial", core.getTime(), core.getTime()-t0, core.getTime()-getready])
-#    if eyetrack_mode:
-#        tk.sendMessage("Waiting for next trial")
-        
-#        
-#    ## record response in data file and wait for next trial
-#    # figure out which response to record. We want to record whether they press "more painful" for comparison. This is either L or R arrow depending
-#    # on the counterbalancing
-#    if stimulus[4] == 0: #if control left
-#        if keypress[0] == 'right': #count right key because that's comparison
-#            response = 1
-#        elif keypress[0] == 'left': #they answered control more pain
-#            response = 0
-#        else: #if something else has been pressed or no key is pressed
-#            response = 'NaN'
-#    elif stimulus[4] == 1: #if control right
-#        if keypress[0] == 'right':  #they answered control more pain
-#            response = 0
-#        elif keypress[0] == 'left': #count left key because that's comparison
-#            response = 1
-#        else: #if something else has been pressed or no key is pressed
-#            response = 'NaN'
-#   # writer.writerow(["Trial number", "Trial Name", "Trial Type ID", "Control Intensity", "Comparison Intensity", "Position of Control", "Sub Resp Raw" "Sub Resp Comparison More Pain", "RT"]) # data file column headers
-#    print("Write to file trial {}".format(trial+1))
-#    writer.writerow([trial+1, stimulus[1], stimulus[2], myPainControlIntensity, myPainIntensity, stimulus[4], keypress[0], response, RT[trial]]) # data file column headers
+
+
 #    
     
     
@@ -1385,24 +1613,76 @@ for trial, stimulus in enumerate(stimuli_list_shuffled):
     #core.wait(1.0)
 
 
+#### Present 1 final ISI ###
 
 
+#calculate how much time is left after stimulation. Trial should be 10s with 9s ISI
+onset_of_ISI = core.getTime()
+print("Onset of Final ISI X s after trial start:   " + str(onset_of_ISI - trial_start_time))
+#print("Onset of ISI X s after trial start:   " + str(onset_of_ISI - (triggertime + (trial+1) * 10 + ISI_time)))
+# remember total_trial_len already includes the current trial's requested ISI (so total_trial_len is different on each trial)
+
+totalISIelapsedsofar = 0
+for i in range(trial+1): #last i is ((trial + 1) - 1) so for 96 trials, last trial is trial 95 in python, so last i = 95 here (95+1-1). We add up everything until and including the last trial
+    totalISIelapsedsofar = totalISIelapsedsofar + float(ISI_vector[i]) #just add everything up so far
+
+# formula = length - delay
+# delay = time_now - time_it_should_be
+#time_it_should_be = trigger + 2 x NTrials + totalISIs + FirstISI + NSchluck
+# putting it all together = length - (time_now - (trigger + 2 x NTrials + totalISIs + FirstISI + NSchluck))
+print("ISI should be " + str(first_or_last_ISI - (onset_of_ISI - (triggertime + (cue_dur + stim_dur_main_expt) * (trial+1) + totalISIelapsedsofar + first_or_last_ISI + Schluckpause_len * nSchluck))) + " s long...")
+
+if eyetrack_mode:
+    tk.sendMessage("After final ISI onset")
+    
+writerlog.writerow(["FINAL ISI start", onset_of_ISI, onset_of_ISI - triggertime, onset_of_ISI - trial_start_time])    
+    
+print("First/Last ISI: " + str(first_or_last_ISI))
+print("Onset of ISI: " + str(onset_of_ISI))
+print("Trigger time: " + str(triggertime))
+print("Cue + Stim: " + str(cue_dur + stim_dur_main_expt))
+print("Trial: " + str(trial+1))
+print("totalISIelapsedsofar " + str(totalISIelapsedsofar) )
+print("Schluck: " + str(Schluckpause_len * nSchluck))
+
+
+remainingISI = first_or_last_ISI - (onset_of_ISI - (triggertime + (cue_dur + stim_dur_main_expt) * (trial+1) + totalISIelapsedsofar + first_or_last_ISI + Schluckpause_len * nSchluck))    
+
+#display ISI
+while (core.getTime() - onset_of_ISI) < remainingISI:
+    myFunctions.showFix(win, "+", (1, 1, 1))
+    win.flip()
+    if dual_screen:
+        myFunctions.showDebugText(winexp, currtrialstring, (0, 220),whichComputer)
+        #myFunctions.showDebugText(winexp, "Stimulus: " + str(stimulus[1]),  (0, -200),whichComputer) 
+        #myFunctions.showDebugText(winexp,("Temp" + debugText1),debugTextPos1,whichComputer)
+        myFunctions.showFix(winexp, "ISI", (1, 1, 1))
+        winexp.flip()
+        
+end_of_ISI = core.getTime()
+if eyetrack_mode:
+    tk.sendMessage("After final ISI offset")
+    
+writerlog.writerow(["FINAL ISI end", end_of_ISI, end_of_ISI - triggertime, end_of_ISI - trial_start_time])    
 
 
 # show goodbye screen
-print("End: " + str(core.getTime() - triggertime) + " after trigger")
+the_end = core.getTime()
+print("End: " + str(the_end - triggertime) + " after trigger")
 myFunctions.showText(win, u"Danke für die Teilnahme", (1, 1, 1))
-myFunctions.showText(winexp, u"Danke für die Teilnahme", (1, 1, 1))
+if dual_screen:
+    myFunctions.showText(winexp, u"Danke für die Teilnahme", (1, 1, 1))
+    winexp.flip()
 win.flip()
-winexp.flip()
+
 
 if eyetrack_mode:
     tk.sendMessage("End")
-writerlog.writerow(["End of block", core.getTime(), core.getTime()-triggertime])     
+writerlog.writerow(["End of block", the_end, the_end-triggertime])     
 core.wait(1.000)
 
 
 
-    
+
     
 QuitExperiment()    
